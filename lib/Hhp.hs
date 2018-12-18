@@ -1,4 +1,4 @@
--- | The ghc-mod library.
+-- | The Happy Haskell Programming library.
 
 module Hhp (
   -- * Cradle

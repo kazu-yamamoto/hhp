@@ -44,7 +44,7 @@
 <dt>C-cC-j</dt>
 <dd>In the beginning of the buffer, errors of other files are displayed. Typing C-cC-j on the errors jumps to the fist file of the error sources.</dd>
 <dt>C-cC-k</dt>
-<dd>Kill the ghc-modi subprocess for this project. If you install dependency packages, this command should be executed to reflect that change.</dd>
+<dd>Kill the `hppi` subprocess for this project. If you install dependency packages, this command should be executed to reflect that change.</dd>
 <dt>C-c&lt;</dt>
 <dd>Make the indentation of the region shallower.</dd>
 <dt>C-c&gt;</dt>
