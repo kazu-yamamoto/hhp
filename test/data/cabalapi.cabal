@@ -1,32 +1,29 @@
-Name:                   ghc-mod
-Version:                1.11.3
+Name:                   hhp
+Version:                0.0.0
 Author:                 Kazu Yamamoto <kazu@iij.ad.jp>
 Maintainer:             Kazu Yamamoto <kazu@iij.ad.jp>
 License:                BSD3
 License-File:           LICENSE
-Homepage:               http://www.mew.org/~kazu/proj/ghc-mod/
-Synopsis:               Happy Haskell programming on Emacs/Vim
-Description:            This packages includes Elisp files
-			and a Haskell command, "ghc-mod".
-			"ghc*.el" enable completion of
-			Haskell symbols on Emacs.
-                        Flymake is also integrated.
-			"ghc-mod" is a backend of "ghc*.el".
-			It lists up all installed modules
-                        or extracts names of functions, classes,
-                        and data declarations.
-                        To use "ghc-mod" on Vim,
-                        see <https://github.com/eagletmt/ghcmod-vim> or
-                        <https://github.com/scrooloose/syntastic>
+Homepage:               https://github.com/kazu-yamamoto/hhp
+Synopsis:               Happy Haskell Programming
+Description:            The hhp command is a backend command to enrich
+                        Haskell programming on editors.
+                        The hhpc/hhpi commands are based on HHP library
+                        which is a wrapper of GHC API and Cabal API.
+                        This package includes the hhpc command,
+                        the hhpi command,
+                        the HHP library, and Emacs front-end.
+                        For more information, please see its home page.
 Category:               Development
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
 Data-Dir:               elisp
-Data-Files:             Makefile ghc.el ghc-func.el ghc-doc.el ghc-comp.el
-                        ghc-flymake.el ghc-command.el ghc-info.el
-                        ghc-ins-mod.el ghc-indent.el
-Executable ghc-mod
-  Main-Is:              GHCMod.hs
+Data-Files:             Makefile hhp.el hhp-func.el hhp-doc.el hhp-comp.el
+                        hhp-check.el hhp-process.el hhp-command.el hhp-info.el
+                        hhp-ins-mod.el hhp-indent.el hhp-pkg.el
+
+Executable hhpc
+  Main-Is:              hhpc.hs
   Other-Modules:        Browse
                         CabalApi
                         Cabal
@@ -41,7 +38,6 @@ Executable ghc-mod
                         Lang
                         Lint
                         List
-                        Paths_ghc_mod
                         Types
   GHC-Options:          -Wall
   Build-Depends:        base >= 4.0 && < 5
@@ -64,4 +60,4 @@ Test-Suite spec
 
 Source-Repository head
   Type:                 git
-  Location:             git://github.com/kazu-yamamoto/ghc-mod.git
+  Location:             git://github.com/kazu-yamamoto/hhp.git
