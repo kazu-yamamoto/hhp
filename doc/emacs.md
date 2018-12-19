@@ -31,10 +31,6 @@
 <dd>Displays the info of this expression in another window.</dd>
 <dt>C-cC-t</dt>
 <dd>Displays the type of this expression in the minibuffer. Type C-cC-t multiple time to enlarge the expression.</dd>
-<dt>C-cC-a</dt>
-<dd>Selects one of possible cases.</dd>
-<dt>C-cC-f</dt>
-<dd>Replaces a hole with user-typed functions followed by holes.</dd>
 <dt>C-cC-e</dt>
 <dd>Displays the expanded Template Haskell.</dd>
 <dt>C-cC-m</dt>
@@ -160,12 +156,4 @@ On the other hand, typing `C-uM-t` gets:
 ```
 filterNothing :: [Maybe a] -> [a]
 filterNothing xs = _body
-```
-
-Then, `C-xC-s` refreshes highlightings. When you type `C-cC-f` on `_body` and
-type `filter` in the minibuffer, you get:
-
-```
-filterNothing :: [Maybe a] -> [a]
-filterNothing xs = filter _body_1 _body_2
 ```
