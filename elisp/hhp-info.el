@@ -141,11 +141,11 @@
 
 (defun hhp-get-pos (buf line col)
   (save-excursion
-    (set-buffer buf)
-    (goto-char (point-min))
-    (forward-line (1- line))
-    (forward-char col)
-    (point)))
+    (with-current-buffer buf
+      (goto-char (point-min))
+      (forward-line (1- line))
+      (forward-char col)
+      (point))))
 
 (defun hhp-read-expression (default)
   (if default
