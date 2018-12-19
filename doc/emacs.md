@@ -169,34 +169,3 @@ type `filter` in the minibuffer, you get:
 filterNothing :: [Maybe a] -> [a]
 filterNothing xs = filter _body_1 _body_2
 ```
-
-## Case handling
-
-Suppose you have:
-
-```
-f :: [a] -> a
-f x = _f_body
-```
-
-Typing `M-t` on `x` splits cases as follows:
-
-```
-f :: [a] -> a
-f [] = _f_body
-f (x:xs) = _f_body
-```
-
-Suppose you have:
-
-```
-f :: a -> Maybe a
-f x = _f_body
-```
-
-Typing `C-cC-a` on `_f_body` and selecting one of possible cases in another window results in:
-
-```
-f :: a -> Maybe a
-f x = Nothing
-```
