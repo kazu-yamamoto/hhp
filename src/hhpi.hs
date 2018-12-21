@@ -43,7 +43,7 @@ import System.IO (hFlush,stdout)
 
 import Hhp
 import Hhp.Ghc
-import Hhp.Internal
+-- import Hhp.Internal
 import Paths_hhp
 
 ----------------------------------------------------------------

@@ -1,19 +1,26 @@
+-- | The Happy Haskell Programming library.
+--   API for interactive processes
+
 module Hhp.Ghc (
-  -- * Converting the 'Ghc' monad to the 'IO' monad
+  -- * Converting the Ghc monad to the IO monad
     withGHC
   , withGHC'
-  -- * 'Ghc' utilities
+  -- * Initializing DynFlags
+  , initializeFlagsWithCradle
+  -- * Ghc utilities
   , boot
   , browse
   , check
   , info
   , types
   , modules
-  -- * 'SymMdlDb'
+  -- * SymMdlDb
   , Symbol
   , SymMdlDb
   , getSymMdlDb
   , lookupSym
+  -- * Misc
+  , getSystemLibDir
   ) where
 
 import Hhp.Boot

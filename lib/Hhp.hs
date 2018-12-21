@@ -1,4 +1,5 @@
 -- | The Happy Haskell Programming library.
+--   API for commands.
 
 module Hhp (
   -- * Cradle

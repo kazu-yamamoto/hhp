@@ -1,4 +1,4 @@
--- | Low level access to the Hhp library.
+-- | The Happy Haskell Programming library in low level.
 
 module Hhp.Internal (
   -- * Types
@@ -17,10 +17,7 @@ module Hhp.Internal (
   , cabalSourceDirs
   , cabalAllTargets
   -- * IO
-  , getSystemLibDir
   , getDynamicFlags
-  -- * Initializing 'DynFlags'
-  , initializeFlagsWithCradle
   -- * Targets
   , setTargetFiles
   -- * Logging
