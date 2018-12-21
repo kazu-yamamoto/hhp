@@ -59,9 +59,7 @@ withGHC file body = ghandle ignore $ withGHC' body
 withGHC' :: Ghc a -> IO a
 withGHC' body = do
     mlibdir <- getSystemLibDir
-    G.runGhc mlibdir $ do
-        dflags <- G.getSessionDynFlags
-        G.defaultCleanupHandler dflags body
+    G.runGhc mlibdir body
 
 ----------------------------------------------------------------
 

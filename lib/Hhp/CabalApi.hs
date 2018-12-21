@@ -15,7 +15,6 @@ import Distribution.Package (Dependency(Dependency))
 import qualified Distribution.Package as C
 import Distribution.PackageDescription (PackageDescription, BuildInfo, TestSuite, TestSuiteInterface(..), Executable)
 import qualified Distribution.PackageDescription as P
-import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.Simple.Compiler (CompilerId(..), CompilerFlavor(..))
 import Distribution.Simple.Program (ghcProgram)
 import Distribution.Simple.Program.Types (programName, programFindVersion)
@@ -25,14 +24,19 @@ import Distribution.Verbosity (silent)
 import Distribution.Version (Version)
 
 #if MIN_VERSION_Cabal(2,2,0)
+import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 import Distribution.Types.GenericPackageDescription (mkFlagAssignment)
 import Distribution.Types.PackageName (unPackageName)
 #elif MIN_VERSION_Cabal(2,0,0)
+import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parse (readPackageDescription)
+import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 import Distribution.Types.PackageName (unPackageName)
 #else
 import Distribution.Package (PackageName(PackageName))
+import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 #endif
 
@@ -128,12 +132,13 @@ parseCabalFile file = do
 #endif
 #if MIN_VERSION_Cabal(2,0,0)
     nullPkg pd = unPackageName (C.pkgName (P.package pd)) == ""
+    toPkgDesc cid = finalizePD none defaultComponentRequestedSpec (const True) buildPlatform cid []
 #else
     nullPkg pd = name == ""
       where
         PackageName name = C.pkgName (P.package pd)
-#endif
     toPkgDesc cid = finalizePackageDescription none (const True) buildPlatform cid []
+#endif
 
 ----------------------------------------------------------------
 
@@ -222,7 +227,11 @@ cabalAllTargets pd = do
   where
     lib = case P.library pd of
             Nothing -> []
+#if MIN_VERSION_Cabal(2,0,0)
+            Just l -> P.explicitLibModules l
+#else
             Just l -> P.libModules l
+#endif
 
     libTargets = map toModuleString lib
 #if __GLASGOW_HASKELL__ >= 704
