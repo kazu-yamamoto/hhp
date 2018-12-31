@@ -11,13 +11,15 @@ module Hhp.GHCApi (
   , withCmdFlags
   , setNoWaringFlags
   , setAllWaringFlags
+  , setPartialSignatures
   ) where
 
 import CoreMonad (liftIO)
-import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages), gopt_set, ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..))
+import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages), gopt_set, ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), xopt_set)
 import Exception (ghandle, SomeException(..))
 import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
 import qualified GHC as G
+import GHC.LanguageExtensions (Extension(..))
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
@@ -202,6 +204,9 @@ allWarningFlags = unsafePerformIO $ do
         df <- G.getSessionDynFlags
         df' <- addCmdOpts ["-Wall"] df
         return $ G.warningFlags df'
+
+setPartialSignatures :: DynFlags -> DynFlags
+setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWildCards
 
 setCabalPkg :: DynFlags -> DynFlags
 setCabalPkg dflag = gopt_set dflag Opt_BuildingCabalPackage

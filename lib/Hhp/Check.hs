@@ -36,7 +36,7 @@ checkSyntax opt cradle files = withGHC sessionName $ do
 check :: Options
       -> [FilePath]  -- ^ The target files.
       -> Ghc (Either String String)
-check opt fileNames = withLogger opt setAllWaringFlags $
+check opt fileNames = withLogger opt (setAllWaringFlags . setPartialSignatures) $
     setTargetFiles fileNames
 
 ----------------------------------------------------------------
