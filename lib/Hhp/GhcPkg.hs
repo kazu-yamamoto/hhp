@@ -55,8 +55,24 @@ getPackageDbStack :: FilePath -- ^ Project Directory (where the
                                  -- exists)
                   -> IO [GhcPkgDb]
 getPackageDbStack cdir =
-    (getSandboxDb cdir >>= \db -> return [GlobalDb, PackageDb db])
-      `E.catch` \(_ :: SomeException) -> return [GlobalDb, UserDb]
+    fromSandbox
+    `E.catch` \(_ :: SomeException) -> fromDefault
+  where
+    fromSandbox = do
+        db <- getSandboxDb cdir
+        return [GlobalDb, PackageDb db]
+    fromDefault =
+        -- Without a sandbox, return an empty PackageDb stack.
+        -- This does the correct thing in most environments:
+        --   - Under the cabal 2.0 commands, GHC gets the correct options from
+        --     the environment file.
+        --   - Under 'cabal exec', GHC gets the correct options from the
+        --     GHC_ENVIRONMENT variable.
+        --   - Under 'stack exec', GHC gets the correct options from the
+        --     GHC_PACKAGE_PATH variable.
+        --   - Under Nix, GHC also gets the correct options from the
+        --     GHC_PACKAGE_PATH variable.
+        return []
 
 
 -- | List packages in one or more ghc package store
