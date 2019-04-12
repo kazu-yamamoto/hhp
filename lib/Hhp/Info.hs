@@ -10,7 +10,6 @@ module Hhp.Info (
 import CoreMonad (liftIO)
 import CoreUtils (exprType)
 import Desugar (deSugarExpr)
-import DynFlags (gopt_set, wopt_set, WarningFlag(Opt_WarnTypedHoles))
 import Exception (ghandle, SomeException(..))
 import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L))
 import qualified GHC as G
@@ -124,12 +123,6 @@ inModuleContext file action =
         dflag <- G.getSessionDynFlags
         style <- getStyle dflag
         action dflag style
-
-setDeferTypeErrors :: DynFlags -> DynFlags
-setDeferTypeErrors dflag = gopt_set dflag G.Opt_DeferTypeErrors
-
-setWarnTypedHoles :: DynFlags -> DynFlags
-setWarnTypedHoles dflag = wopt_set dflag Opt_WarnTypedHoles
 
 ----------------------------------------------------------------
 

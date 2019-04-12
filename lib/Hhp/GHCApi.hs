@@ -11,11 +11,16 @@ module Hhp.GHCApi (
   , withCmdFlags
   , setNoWaringFlags
   , setAllWaringFlags
+  , setDeferTypeErrors
   , setPartialSignatures
+  , setWarnTypedHoles
   ) where
 
 import CoreMonad (liftIO)
-import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages), gopt_set, ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), xopt_set)
+import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages)
+                ,WarningFlag(Opt_WarnTypedHoles)
+                ,gopt_set, xopt_set, wopt_set
+                ,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..))
 import Exception (ghandle, SomeException(..))
 import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
 import qualified GHC as G
@@ -188,6 +193,18 @@ withCmdFlags flags body = G.gbracket setup teardown (\_ -> body)
 
 ----------------------------------------------------------------
 
+-- | Set 'DynFlags' equivalent to "-fdefer-type-errors"
+setDeferTypeErrors :: DynFlags -> DynFlags
+setDeferTypeErrors dflag = gopt_set dflag G.Opt_DeferTypeErrors
+
+-- | Set 'DynFlags' equivalent to "-Wtyped-holes"
+setWarnTypedHoles :: DynFlags -> DynFlags
+setWarnTypedHoles dflag = wopt_set dflag Opt_WarnTypedHoles
+
+-- | Set 'DynFlags' equivalent to "-XPartialTypeSignatures"
+setPartialSignatures :: DynFlags -> DynFlags
+setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWildCards
+
 -- | Set 'DynFlags' equivalent to "-w:".
 setNoWaringFlags :: DynFlags -> DynFlags
 setNoWaringFlags df = df { warningFlags = Gap.emptyWarnFlags}
@@ -204,9 +221,6 @@ allWarningFlags = unsafePerformIO $ do
         df <- G.getSessionDynFlags
         df' <- addCmdOpts ["-Wall"] df
         return $ G.warningFlags df'
-
-setPartialSignatures :: DynFlags -> DynFlags
-setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWildCards
 
 setCabalPkg :: DynFlags -> DynFlags
 setCabalPkg dflag = gopt_set dflag Opt_BuildingCabalPackage
