@@ -11,6 +11,7 @@ module Hhp.GHCApi (
   , withCmdFlags
   , setNoWaringFlags
   , setAllWaringFlags
+  , setDeferTypedHoles
   , setDeferTypeErrors
   , setPartialSignatures
   , setWarnTypedHoles
@@ -192,6 +193,10 @@ withCmdFlags flags body = G.gbracket setup teardown (\_ -> body)
     teardown = void . G.setSessionDynFlags
 
 ----------------------------------------------------------------
+
+-- | Set 'DynFlags' equivalent to "-fdefer-typed-holes"
+setDeferTypedHoles :: DynFlags -> DynFlags
+setDeferTypedHoles dflag = gopt_set dflag G.Opt_DeferTypedHoles
 
 -- | Set 'DynFlags' equivalent to "-fdefer-type-errors"
 setDeferTypeErrors :: DynFlags -> DynFlags
