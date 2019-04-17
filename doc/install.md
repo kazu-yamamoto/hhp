@@ -7,7 +7,7 @@
 % cabal install hhp
 ```
 
-This installs `hhpc` and `hhpi` to "\~/.cabal/bin" and Emacs front-end to "\~/.cabal/share"
+This installs `hhpc` and `hhpi` to "\~/.cabal/bin" and Emacs front-end to a directory under "\~/.cabal/share/" (e.g. "\~/.cabal/share/x86_64-osx-ghc-8.6.4/hhp-0.0.0/").
 
 ## Installing Haskell mode
 
