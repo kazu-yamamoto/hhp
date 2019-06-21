@@ -77,7 +77,6 @@ Library
                       , filepath
                       , ghc
                       , hlint >= 1.8.61
-                      , io-choice
                       , process
                       , syb
                       , ghc-boot
@@ -163,7 +162,6 @@ Test-Suite spec
                       , filepath
                       , ghc
                       , hspec >= 1.7.1
-                      , io-choice
                       , process
                       , syb
                       , hlint >= 1.7.1
