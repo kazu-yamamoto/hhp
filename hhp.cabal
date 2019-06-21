@@ -114,6 +114,8 @@ Test-Suite doctest
   Main-Is:              doctests.hs
   Build-Depends:        base
                       , doctest >= 0.9.3
+-- for MIN_VERSION_hlint
+                      , hlint
 
 Test-Suite spec
   Default-Language:     Haskell2010
