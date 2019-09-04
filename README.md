@@ -14,6 +14,7 @@ Emacs front-end is an extension of [Haskell mode](https://github.com/haskell/has
 - GHC 8.2 - Cabal 2.0
 - GHC 8.4 - Cabal 2.2
 - GHC 8.6 - Cabal 2.4
+- GHC 8.8 - Cabal 3.0
 
 [![Build Status](https://travis-ci.org/kazu-yamamoto/hhp.svg?branch=master)](https://travis-ci.org/kazu-yamamoto/hhp)
 
