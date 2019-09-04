@@ -16,7 +16,10 @@ module Hhp.Gap (
   ) where
 
 import DynFlags (DynFlags)
-import GHC(LHsBind, LHsExpr, LPat, Type)
+import GHC (LHsBind, LHsExpr, LPat, Type)
+#if __GLASGOW_HASKELL__ >= 808
+import GHC (Located)
+#endif
 import HsExpr (MatchGroup)
 import Outputable (PrintUnqualified, PprStyle, Depth(AllTheWay), mkUserStyle)
 
@@ -99,7 +102,16 @@ fixInfo = id
 
 ----------------------------------------------------------------
 
-#if __GLASGOW_HASKELL__ >= 806
+#if __GLASGOW_HASKELL__ >= 808
+type LExpression = LHsExpr GhcTc
+type LBinding    = LHsBind GhcTc
+type LPattern    = Located (LPat GhcTc)
+
+inTypes :: MatchGroup GhcTc LExpression -> [Type]
+inTypes = mg_arg_tys . mg_ext
+outType :: MatchGroup GhcTc LExpression -> Type
+outType = mg_res_ty . mg_ext
+#elif __GLASGOW_HASKELL__ >= 806
 type LExpression = LHsExpr GhcTc
 type LBinding    = LHsBind GhcTc
 type LPattern    = LPat    GhcTc

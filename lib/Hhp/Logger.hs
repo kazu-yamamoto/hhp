@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 
 module Hhp.Logger (
     withLogger
@@ -12,7 +13,10 @@ import DynFlags (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
 import ErrUtils
 import Exception (ghandle)
 import FastString (unpackFS)
-import GHC (Ghc, DynFlags(..), SrcSpan(..), Severity(SevError))
+import GHC (Ghc, DynFlags(..), SrcSpan(..))
+#if __GLASGOW_HASKELL__ < 808
+import GHC (Severity(SevError))
+#endif
 import qualified GHC as G
 import HscTypes (SourceError, srcErrorMessages)
 import Outputable (PprStyle, SDoc)

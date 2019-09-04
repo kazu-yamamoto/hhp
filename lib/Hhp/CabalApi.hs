@@ -186,7 +186,9 @@ cabalDependPackages :: [BuildInfo] -> [PackageBaseName]
 cabalDependPackages bis = uniqueAndSort pkgs
   where
     pkgs = map getDependencyPackageName $ concatMap P.targetBuildDepends bis
-#if MIN_VERSION_Cabal(2,0,0)
+#if MIN_VERSION_Cabal(3,0,0)
+    getDependencyPackageName (Dependency pkg _ _) = unPackageName pkg
+#elif MIN_VERSION_Cabal(2,0,0)
     getDependencyPackageName (Dependency pkg _) = unPackageName pkg
 #else
     getDependencyPackageName (Dependency (PackageName nm) _) = nm
