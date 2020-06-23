@@ -13,14 +13,22 @@ module Hhp.Gap (
   , LPattern
   , inTypes
   , outType
+  , HsBindLR(..)
+  , languagesAndExtensions
+  , mkFunTy
+  , mkFunTys
   ) where
 
-import DynFlags (DynFlags)
-import GHC (LHsBind, LHsExpr, LPat, Type)
+import DynFlags (DynFlags, supportedLanguagesAndExtensions)
+import GHC (LHsBind, LHsExpr, Pat, Type)
 #if __GLASGOW_HASKELL__ >= 808
 import GHC (Located)
 #endif
+#if __GLASGOW_HASKELL__ >= 810
+import GHC.Hs.Expr (MatchGroup)
+#else
 import HsExpr (MatchGroup)
+#endif
 import Outputable (PrintUnqualified, PprStyle, Depth(AllTheWay), mkUserStyle)
 
 ----------------------------------------------------------------
@@ -39,7 +47,11 @@ import GHC (mgModSummaries, ModSummary, ModuleGraph)
 import qualified Data.IntSet as I (IntSet, empty)
 #endif
 
-#if __GLASGOW_HASKELL__ >= 806
+#if __GLASGOW_HASKELL__ >= 810
+import GHC.Hs.Expr (MatchGroupTc(..))
+import GHC.Hs.Extension (GhcTc)
+import GHC (mg_ext)
+#elif __GLASGOW_HASKELL__ >= 806
 import HsExpr (MatchGroupTc(..))
 import HsExtension (GhcTc)
 import GHC (mg_ext)
@@ -48,6 +60,15 @@ import HsExtension (GhcTc)
 import GHC (mg_res_ty, mg_arg_tys)
 #else
 import GHC (Id, mg_res_ty, mg_arg_tys)
+#endif
+
+#if __GLASGOW_HASKELL__ >= 810
+import GHC.Hs.Binds (HsBindLR(..))
+import GHC.Platform.Host
+import Type (mkInvisFunTy, mkVisFunTys)
+#else
+import HsBinds (HsBindLR(..))
+import Type (mkFunTy, mkFunTys)
 #endif
 
 ----------------------------------------------------------------
@@ -105,7 +126,7 @@ fixInfo = id
 #if __GLASGOW_HASKELL__ >= 808
 type LExpression = LHsExpr GhcTc
 type LBinding    = LHsBind GhcTc
-type LPattern    = Located (LPat GhcTc)
+type LPattern    = Located (Pat GhcTc)
 
 inTypes :: MatchGroup GhcTc LExpression -> [Type]
 inTypes = mg_arg_tys . mg_ext
@@ -138,4 +159,21 @@ inTypes :: MatchGroup Id LExpression -> [Type]
 inTypes = mg_arg_tys
 outType :: MatchGroup Id LExpression -> Type
 outType = mg_res_ty
+#endif
+
+----------------------------------------------------------------
+
+languagesAndExtensions :: [String]
+#if __GLASGOW_HASKELL__ >= 810
+languagesAndExtensions = supportedLanguagesAndExtensions cHostPlatformMini
+#else
+languagesAndExtensions = supportedLanguagesAndExtensions
+#endif
+
+#if __GLASGOW_HASKELL__ >= 810
+mkFunTy :: Type -> Type -> Type
+mkFunTy  = mkInvisFunTy
+
+mkFunTys :: [Type] -> Type -> Type
+mkFunTys = mkVisFunTys
 #endif

@@ -13,12 +13,11 @@ import Desugar (deSugarExpr)
 import Exception (ghandle, SomeException(..))
 import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L))
 import qualified GHC as G
-import HsBinds (HsBindLR(..))
+
 import HscTypes (ModSummary)
 import Outputable (PprStyle)
 import PprTyThing
 import TcHsSyn (hsPatType)
-import TcType (mkFunTys)
 
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)

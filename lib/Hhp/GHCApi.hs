@@ -109,7 +109,7 @@ initSession :: Build
             -> Options
             -> CompilerOptions
             -> Ghc ()
-initSession build Options {..} CompilerOptions {..} = do
+initSession build Options{} CompilerOptions{..} = do
     df <- G.getSessionDynFlags
     void $ G.setSessionDynFlags =<< (addCmdOpts ghcOptions
       $ setLinkerOptions

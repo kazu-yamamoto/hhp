@@ -1,10 +1,9 @@
 module Hhp.Lang where
 
-import DynFlags (supportedLanguagesAndExtensions)
-
+import Hhp.Gap
 import Hhp.Types
 
 -- | Listing language extensions.
 
 listLanguages :: Options -> IO String
-listLanguages opt = return $ convert opt supportedLanguagesAndExtensions
+listLanguages opt = return $ convert opt $ languagesAndExtensions

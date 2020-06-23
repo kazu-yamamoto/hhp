@@ -10,7 +10,7 @@ import qualified GHC as G
 import Name (getOccString)
 import Outputable (ppr, Outputable)
 import TyCon (isAlgTyCon)
-import Type (dropForAlls, splitFunTy_maybe, mkFunTy, isPredTy)
+import Type (dropForAlls, splitFunTy_maybe, isPredTy)
 
 import Control.Exception (SomeException(..))
 import Data.Char (isAlpha)
@@ -18,6 +18,7 @@ import Data.List (sort)
 import Data.Maybe (catMaybes)
 
 import Hhp.Doc (showPage, styleUnqualified)
+import Hhp.Gap
 import Hhp.GHCApi
 import Hhp.Things
 import Hhp.Types
