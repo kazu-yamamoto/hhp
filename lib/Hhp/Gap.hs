@@ -20,9 +20,11 @@ module Hhp.Gap (
   ) where
 
 import DynFlags (DynFlags, supportedLanguagesAndExtensions)
-import GHC (LHsBind, LHsExpr, Pat, Type)
+import GHC (LHsBind, LHsExpr, Type)
 #if __GLASGOW_HASKELL__ >= 808
-import GHC (Located)
+import GHC (Located, Pat)
+#else
+import GHC (LPat)
 #endif
 #if __GLASGOW_HASKELL__ >= 810
 import GHC.Hs.Expr (MatchGroup)
