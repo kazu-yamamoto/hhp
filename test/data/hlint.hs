@@ -2,4 +2,4 @@ module Hlist where
 
 main :: IO ()
 main = do
-    putStrLn "Hello, world!"
+    putStrLn $ foldr (+) 0 [0..10]
