@@ -28,7 +28,7 @@
 	       (< emacs-minor-version minor)))
       (error "hhp requires at least Emacs %d.%d" major minor)))
 
-(defconst hhp-version "0.0.2")
+(defconst hhp-version "0.0.3")
 
 ;; (eval-when-compile
 ;;  (require 'haskell-mode))
