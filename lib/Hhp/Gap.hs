@@ -67,7 +67,7 @@ import GHC (Id, mg_res_ty, mg_arg_tys)
 #if __GLASGOW_HASKELL__ >= 810
 import GHC.Hs.Binds (HsBindLR(..))
 import GHC.Platform.Host
-import Type (mkInvisFunTy, mkVisFunTys)
+import Type (mkVisFunTy, mkVisFunTys)
 #else
 import HsBinds (HsBindLR(..))
 import Type (mkFunTy, mkFunTys)
@@ -174,7 +174,7 @@ languagesAndExtensions = supportedLanguagesAndExtensions
 
 #if __GLASGOW_HASKELL__ >= 810
 mkFunTy :: Type -> Type -> Type
-mkFunTy  = mkInvisFunTy
+mkFunTy  = mkVisFunTy
 
 mkFunTys :: [Type] -> Type -> Type
 mkFunTys = mkVisFunTys
