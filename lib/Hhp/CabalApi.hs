@@ -27,21 +27,23 @@ import Distribution.Version (Version)
 import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-import Distribution.Types.Flag (mkFlagAssignment)
+import Distribution.Types.Flag (mkFlagAssignment, mkFlagName)
 import Distribution.Types.PackageName (unPackageName)
 #elif MIN_VERSION_Cabal(2,2,0)
 import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-import Distribution.Types.GenericPackageDescription (mkFlagAssignment)
+import Distribution.Types.GenericPackageDescription (mkFlagAssignment, mkFlagName)
 import Distribution.Types.PackageName (unPackageName)
 #elif MIN_VERSION_Cabal(2,0,0)
 import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
+import Distribution.Types.GenericPackageDescription (mkFlagName)
 import Distribution.Types.PackageName (unPackageName)
 #else
 import Distribution.Package (PackageName(PackageName))
+import Distribution.PackageDescription (FlagName (FlagName))
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 #endif
@@ -52,6 +54,7 @@ import CoreMonad (liftIO)
 import Data.Maybe (maybeToList, mapMaybe)
 import Data.Set (fromList, toList)
 import System.Directory (doesFileExist)
+import System.Environment (lookupEnv)
 import System.FilePath (dropExtension, takeFileName, (</>))
 
 import Hhp.Types
@@ -125,25 +128,33 @@ parseCabalFile file = do
 #else
     epgd <- readPackageDescription silent file
 #endif
-    case toPkgDesc cid' epgd of
+    flags <- getFlags
+    case toPkgDesc cid' flags epgd of
         Left deps    -> throwIO $ userError $ show deps ++ " are not installed"
         Right (pd,_) -> if nullPkg pd
                         then throwIO $ userError $ file ++ " is broken"
                         else return pd
   where
+    envFlags = do
+      let parseF []      = []
+          parseF ccs@(c:cs)
+            | c == '-'   = [(mkFlagName cs, False)]
+            | otherwise  = [(mkFlagName ccs, True)]
+      maybe [] (concatMap parseF . words) `fmap` lookupEnv "HHP_CABAL_FLAGS"
 #if MIN_VERSION_Cabal(2,2,0)
-    none = mkFlagAssignment []
+    getFlags = mkFlagAssignment `fmap` envFlags
 #else
-    none = []
+    getFlags = envFlags
 #endif
 #if MIN_VERSION_Cabal(2,0,0)
     nullPkg pd = unPackageName (C.pkgName (P.package pd)) == ""
-    toPkgDesc cid = finalizePD none defaultComponentRequestedSpec (const True) buildPlatform cid []
+    toPkgDesc cid flags = finalizePD flags defaultComponentRequestedSpec (const True) buildPlatform cid []
 #else
+    mkFlagName = FlagName
     nullPkg pd = name == ""
       where
         PackageName name = C.pkgName (P.package pd)
-    toPkgDesc cid = finalizePackageDescription none (const True) buildPlatform cid []
+    toPkgDesc cid flags = finalizePackageDescription flags (const True) buildPlatform cid []
 #endif
 
 ----------------------------------------------------------------
