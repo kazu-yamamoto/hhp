@@ -5,6 +5,7 @@ module CabalApiSpec where
 import Control.Exception
 import Data.Maybe
 import System.Directory
+import System.Environment (unsetEnv, setEnv)
 import System.FilePath
 import Test.Hspec
 
@@ -56,6 +57,20 @@ spec = do
         it "extracts all hs-source-dirs including \".\"" $ do
             dirs <- cabalSourceDirs . cabalAllBuildInfo <$> parseCabalFile "test/data/cabalapi.cabal"
             dirs `shouldBe` [".", "test"]
+
+    describe "HHP_CABAL_FLAGS" $ do
+        it "dependent packages without flags" $ do
+            unsetEnv "HHP_CABAL_FLAGS"
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs `shouldBe` ["base", "directory"]
+        it "dependent packages with foo flag" $ do
+            setEnv "HHP_CABAL_FLAGS" "foo"
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs `shouldBe` ["base", "directory", "filepath"]
+        it "dependent packages with foo and -bar flag" $ do
+            setEnv "HHP_CABAL_FLAGS" "foo -bar"
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs `shouldBe` ["base", "filepath"]
 
 {-
     describe "cabalAllBuildInfo" $ do
