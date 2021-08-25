@@ -1,0 +1,11 @@
+Name:                   check-sublib
+Version:                0.0.0
+
+library
+  build-depends:       base <5
+
+library foo
+  build-depends:       array
+
+library bar
+  build-depends:       bytestring
