@@ -1,0 +1,21 @@
+Name:                   check-flags
+Version:                0.0.0
+
+flag foo
+  description: foo flag
+  manual: True
+  default: False
+
+flag bar
+  description: foo bar
+  manual: True
+  default: True
+
+library
+  build-depends:       base <5
+
+  if flag(foo)
+    build-depends:     filepath
+
+  if flag(bar)
+    build-depends:     directory
