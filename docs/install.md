@@ -13,7 +13,7 @@ rank: 2
 % cabal install hhp
 ```
 
-This installs `hhpc` and `hhpi` to "\~/.cabal/bin" and Emacs front-end to a directory under "\~/.cabal/share/" (e.g. "\~/.cabal/share/x86_64-osx-ghc-8.6.4/hhp-0.0.0/").
+This installs `hhpc` and `hhpi` to `~/.cabal/bin` and Emacs front-end to a directory under `~/.cabal/share/` (e.g. `\~/.cabal/share/x86_64-osx-ghc-8.6.4/hhp-0.0.0/`).
 
 ## Installing Haskell mode
 
@@ -24,7 +24,7 @@ This installs `hhpc` and `hhpi` to "\~/.cabal/bin" and Emacs front-end to a dire
 % make
 ```
 
-## Configuring "\~/.emacs.el"
+## Configuring `~/.emacs.el`
 
 Add the directories for Emacs front-end and haskell-mode to `load-path`.
 Then, put the followings to your "\~/.emacs.el" or "\~/.emacs.d/init.el":
