@@ -13,7 +13,7 @@ rank: 2
 % cabal install hhp
 ```
 
-This installs `hhpc` and `hhpi` to `~/.cabal/bin` and Emacs front-end to a directory under `~/.cabal/share/` (e.g. `\~/.cabal/share/x86_64-osx-ghc-8.6.4/hhp-0.0.0/`).
+This installs `hhpc` and `hhpi` to `~/.cabal/bin` and Emacs front-end to a directory under `~/.cabal/share/` (e.g. `~/.cabal/share/x86_64-osx-ghc-8.6.4/hhp-0.0.0/`).
 
 ## Installing Haskell mode
 
@@ -27,7 +27,7 @@ This installs `hhpc` and `hhpi` to `~/.cabal/bin` and Emacs front-end to a direc
 ## Configuring `~/.emacs.el`
 
 Add the directories for Emacs front-end and haskell-mode to `load-path`.
-Then, put the followings to your "\~/.emacs.el" or "\~/.emacs.d/init.el":
+Then, put the followings to your `~/.emacs.el` or `~/.emacs.d/init.el`:
 
 ```
 (autoload 'hhp-init "hhp" nil t)
@@ -59,12 +59,12 @@ Version: all versions must be the same.
 	The Glorious Glasgow Haskell Compilation System, version 8.6.3
 ```
 
-If you put `(setq hhp-debug t)` to your ".emacs", you can watch the communication between Emacs front-end and `hhpi` in the "\*HHP Debug\*" buffer.
+If you put `(setq hhp-debug t)` to your `~/.emacs`, you can watch the communication between Emacs front-end and `hhpi` in the `*HHP Debug*` buffer.
 
 ## Customizing
 
 If you want to specify GHC options from Emacs, set `hhp-ghc-options`. 
-The following is an example to specify the `"-i"` options to GHC.
+The following is an example to specify the `-i` options to GHC.
 
 ```
 (setq hhp-ghc-options '("-idir1" "-idir2"))
