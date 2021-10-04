@@ -4,6 +4,8 @@ title: About
 rank: 1
 ---
 
+# About
+
 The [Happy Haskell Programming (HHP) package](http://hackage.haskell.org/package/happy-haskell-programming) includes the `hhpc` command, the `hhpi` command, the HHP library, and Emacs front-end.
 
 The `hhpc` command and `hhpi` command are backend commands to enrich Haskell programming on editors.
