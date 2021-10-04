@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/kazu-yamamoto/hhp.svg?branch=master)](https://travis-ci.org/kazu-yamamoto/hhp)
+![GitHub Actions status](https://github.com/kazu-yamamoto/hhp/workflows/Haskell%20CI/badge.svg)
 
 # Happy Haskell Programming
 
