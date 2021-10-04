@@ -168,6 +168,7 @@ Test-Suite spec
                       , syb
                       , hlint >= 1.7.1
                       , ghc-boot
+  build-tool-depends: hspec-discover:hspec-discover
 
 Source-Repository head
   Type:                 git
