@@ -1,3 +1,9 @@
+---
+layout: default
+title: hppc
+rank: 3
+---
+
 # The `hppc` command
 
 `hppc` stands for HHP Command line interface. It supports the following subcommands:

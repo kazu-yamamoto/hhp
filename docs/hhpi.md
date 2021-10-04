@@ -1,3 +1,9 @@
+---
+layout: default
+title: hppi
+rank: 4
+---
+
 # The `hhpi` command
 
 ## Example

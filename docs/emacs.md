@@ -1,3 +1,9 @@
+---
+layout: default
+title: Emacs front-end
+rank: 5
+---
+
 # Usage of Emacs front-end
 
 ## Key bindings

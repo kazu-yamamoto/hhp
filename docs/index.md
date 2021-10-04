@@ -1,37 +1,27 @@
-## Welcome to GitHub Pages
+---
+layout: default
+title: About
+rank: 1
+---
 
-You can use the [editor on GitHub](https://github.com/kazu-yamamoto/hhp/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
+The [Happy Haskell Programming (HHP) package](http://hackage.haskell.org/package/happy-haskell-programming) includes the `hhpc` command, the `hhpi` command, the HHP library, and Emacs front-end.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+The `hhpc` command and `hhpi` command are backend commands to enrich Haskell programming on editors.
+`hhpc` and `hhpi` are based on the [HHP library](http://hackage.haskell.org/packages/archive/hhp/latest/doc/html/Hhp.html)
+which is a wrapper of [GHC API](https://downloads.haskell.org/~ghc/latest/docs/html/) and [Cabal](http://hackage.haskell.org/package/Cabal).
 
-### Markdown
+Emacs front-end is an extension of [Haskell mode](https://github.com/haskell/haskell-mode). It enables to complete Haskell symbols and to browse documents of modules. Syntax error highlighting with GHC/Hlint is also integrated. Moreover, you are free from _import hell_.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Supported GHC and Cabal
 
-```markdown
-Syntax highlighted code block
+- GHC 8.0 - Cabal 1.24
+- GHC 8.2 - Cabal 2.0
+- GHC 8.4 - Cabal 2.2
+- GHC 8.6 - Cabal 2.4
+- GHC 8.8 - Cabal 3.0
+- GHC 8.10 - Cabal 3.2
 
-# Header 1
-## Header 2
-### Header 3
+## Copyright and license
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/kazu-yamamoto/hhp/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+Copyright of this package belongs to [IIJ Innovation Institute Inc](http://www.iij-ii.co.jp/en/).
+This package is available under [BSD3 license](LICENSE).

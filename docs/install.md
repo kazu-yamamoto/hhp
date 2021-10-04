@@ -1,3 +1,9 @@
+---
+layout: default
+title: Installation
+rank: 2
+---
+
 # Installing HHP and its Emacs front-end
 
 ## Installing HHP
