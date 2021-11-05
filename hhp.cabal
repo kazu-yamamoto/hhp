@@ -161,6 +161,7 @@ Test-Suite spec
                       , containers
                       , deepseq
                       , directory
+                      , extra
                       , filepath
                       , ghc
                       , hspec >= 1.7.1

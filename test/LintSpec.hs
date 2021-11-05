@@ -1,5 +1,6 @@
 module LintSpec where
 
+import Data.List.Extra
 import Test.Hspec
 
 import Hhp
@@ -9,7 +10,9 @@ spec = do
     describe "lintSyntax" $ do
         it "check syntax with HLint" $ do
             res <- lintSyntax defaultOptions "test/data/hlint.hs"
-            res `shouldBe` "test/data/hlint.hs:5:16-26: Warning: Use sum\NULFound:\NUL  foldr (+) 0\NULPerhaps:\NUL  sum\n"
+            -- hlint displays additional line infomation
+            -- since unknown version (:5:16-26:)
+            replace "16-26" "16" res `shouldBe` "test/data/hlint.hs:5:16: Warning: Use sum\NULFound:\NUL  foldr (+) 0\NULPerhaps:\NUL  sum\n"
 
         context "without suggestions" $ do
             it "doesn't output empty line" $ do

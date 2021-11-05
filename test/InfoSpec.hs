@@ -1,9 +1,9 @@
 module InfoSpec where
 
 import Data.List (isPrefixOf)
+import Data.List.Extra (replace)
 import System.Environment (getExecutablePath)
 import System.Exit
-import System.FilePath
 import System.Process
 import Test.Hspec
 
@@ -53,9 +53,6 @@ spec = do
                 res `shouldSatisfy` ("bar :: [Char]" `isPrefixOf`)
 
         it "doesn't fail on unicode output" $ do
-            dir <- getDistDir
-            code <- rawSystem (dir </> "build/hhpc/hhpc") ["info", "test/data/Unicode.hs", "unicode"]
+            hhpcPath <- replace "/t/" "/x/" . replace "spec" "hhpc" <$> getExecutablePath
+            code <- rawSystem hhpcPath ["info", "test/data/Unicode.hs", "unicode"]
             code `shouldSatisfy` (== ExitSuccess)
-
-getDistDir :: IO FilePath
-getDistDir = takeDirectory . takeDirectory . takeDirectory <$> getExecutablePath
