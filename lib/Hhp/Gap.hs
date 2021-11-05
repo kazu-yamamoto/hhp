@@ -17,9 +17,14 @@ module Hhp.Gap (
   , languagesAndExtensions
   , mkFunTy
   , mkFunTys
+  , getModSummaryForMain
   ) where
 
+import Data.List (find)
+
 import DynFlags (DynFlags, supportedLanguagesAndExtensions)
+import GHC(Ghc,getModuleGraph,moduleNameString,moduleName,ms_mod)
+
 import GHC (LHsBind, LHsExpr, Type)
 #if __GLASGOW_HASKELL__ >= 808
 import GHC (Located, Pat)
@@ -179,3 +184,14 @@ mkFunTy  = mkVisFunTy
 mkFunTys :: [Type] -> Type -> Type
 mkFunTys = mkVisFunTys
 #endif
+
+----------------------------------------------------------------
+
+getModSummaryForMain :: Ghc (Maybe ModSummary)
+#if __GLASGOW_HASKELL__ >= 804
+getModSummaryForMain = find isMain . mgModSummaries <$> getModuleGraph
+#else
+getModSummaryForMain = find isMain <$> getModuleGraph
+#endif
+  where
+    isMain m = moduleNameString (moduleName (ms_mod m)) == "Main"
