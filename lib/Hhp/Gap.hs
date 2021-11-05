@@ -52,6 +52,7 @@ import qualified EnumSet as E (EnumSet, empty)
 import GHC (mgModSummaries, ModSummary, ModuleGraph)
 #else
 import qualified Data.IntSet as I (IntSet, empty)
+import GHC (ModSummary)
 #endif
 
 #if __GLASGOW_HASKELL__ >= 810
