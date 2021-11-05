@@ -90,7 +90,6 @@ Executable hhpc
   Build-Depends:        base >= 4.9 && < 5
                       , directory
                       , filepath
-                      , ghc
                       , hhp
 
 Executable hhpi

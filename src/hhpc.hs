@@ -2,8 +2,6 @@
 
 module Main where
 
-import Config (cProjectVersion)
-
 import Control.Exception (Exception, Handler(..), ErrorCall(..))
 import qualified Control.Exception as E
 import Data.Typeable (Typeable)

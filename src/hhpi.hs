@@ -18,7 +18,6 @@
 
 module Main where
 
-import Config (cProjectVersion)
 import CoreMonad (liftIO)
 import GHC (Ghc)
 #if __GLASGOW_HASKELL__ >= 804
