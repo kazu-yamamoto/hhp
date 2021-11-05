@@ -18,19 +18,10 @@
 
 module Main where
 
-import CoreMonad (liftIO)
-import GHC (Ghc)
-#if __GLASGOW_HASKELL__ >= 804
-import GHC (mgModSummaries)
-#endif
-import qualified GHC as G
-
 import Control.Concurrent (forkIO, MVar, newEmptyMVar, putMVar, readMVar)
 import Control.Exception (SomeException(..), Exception)
 import qualified Control.Exception as E
 import Control.Monad (when, void)
-import Data.List (find)
-import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Typeable (Typeable)
@@ -119,7 +110,7 @@ replace (x:xs)    =  x  : replace xs
 ----------------------------------------------------------------
 
 run :: Cradle -> Maybe FilePath -> Options -> Ghc a -> IO a
-run cradle mlibdir opt body = G.runGhc mlibdir $ do
+run cradle mlibdir opt body = runGhc mlibdir $ do
     initializeFlagsWithCradle opt cradle
     body
 
@@ -177,30 +168,10 @@ newFileSet set file = do
     let set1
          | S.member file set = set
          | otherwise         = S.insert file set
-    mx <- isSameMainFile file <$> getModSummaryForMain
-    return $ case mx of
+    mf <- getMainFileToBeDeleted file
+    return $ case mf of
         Nothing       -> set1
         Just mainfile -> S.delete mainfile set1
-
-getModSummaryForMain :: Ghc (Maybe G.ModSummary)
-#if __GLASGOW_HASKELL__ >= 804
-getModSummaryForMain = find isMain . mgModSummaries <$> G.getModuleGraph
-#else
-getModSummaryForMain = find isMain <$> G.getModuleGraph
-#endif
-  where
-    isMain m = G.moduleNameString (G.moduleName (G.ms_mod m)) == "Main"
-
-isSameMainFile :: FilePath -> Maybe G.ModSummary -> Maybe FilePath
-isSameMainFile _    Nothing  = Nothing
-isSameMainFile file (Just x)
-    | mainfile == file = Nothing
-    | otherwise        = Just mainfile
-  where
-    mmainfile = G.ml_hs_file (G.ms_location x)
-    -- G.ms_hspp_file x is a temporary file with CPP.
-    -- this is a just fake.
-    mainfile = fromMaybe (G.ms_hspp_file x) mmainfile
 
 ----------------------------------------------------------------
 

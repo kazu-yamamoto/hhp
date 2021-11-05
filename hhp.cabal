@@ -102,7 +102,6 @@ Executable hhpi
                       , containers
                       , directory
                       , filepath
-                      , ghc
                       , hhp
 
 Test-Suite doctest
