@@ -5,12 +5,11 @@ module Hhp.Browse (
 
 import GHC (Ghc, GhcException(CmdLineError), ModuleInfo, Name, TyThing, DynFlags, Type, TyCon)
 import qualified GHC as G
+import GHC.Core.Ppr.TyThing (pprTypeForUser)
 import GHC.Core.TyCon (isAlgTyCon)
-import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy)
-import GHC.Core.Type (mkVisFunTy)
+import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy, mkVisFunTy)
 import GHC.Data.FastString (mkFastString)
 import GHC.Types.Name (getOccString)
-import GHC.Utils.Outputable (ppr, Outputable)
 
 import Control.Monad.Catch
 import Data.Char (isAlpha)
@@ -119,6 +118,9 @@ showThing' _     _       = Nothing
 formatType :: DynFlags -> Type -> String
 formatType dflag a = showOutputable dflag (removeForAlls a)
 
+showOutputable :: DynFlags -> Type -> String
+showOutputable dflag = unwords . lines . showPage dflag styleUnqualified . pprTypeForUser
+
 tyType :: TyCon -> Maybe String
 tyType typ
     | isAlgTyCon typ
@@ -126,7 +128,6 @@ tyType typ
       && not (G.isClassTyCon typ) = Just "data"
     | G.isNewTyCon typ            = Just "newtype"
     | G.isClassTyCon typ          = Just "class"
---    | G.isSynTyCon typ            = Just "type" -- fixme
     | G.isTypeSynonymTyCon typ    = Just "type"
     | otherwise                   = Nothing
 
@@ -141,6 +142,3 @@ removeForAlls' ty Nothing = ty
 removeForAlls' ty (Just (pre, ftype, x))
     | isPredTy pre        = mkVisFunTy pre (dropForAlls ftype) x
     | otherwise           = ty
-
-showOutputable :: Outputable a => DynFlags -> a -> String
-showOutputable dflag = unwords . lines . showPage dflag styleUnqualified . ppr

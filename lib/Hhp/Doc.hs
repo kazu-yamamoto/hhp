@@ -6,7 +6,7 @@ module Hhp.Doc (
   ) where
 
 import GHC (Ghc, DynFlags, getPrintUnqual, pprCols)
-import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, initSDocContext, runSDoc, PrintUnqualified, PprStyle, Depth(AllTheWay), mkUserStyle)
+import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, initSDocContext, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle)
 import GHC.Utils.Ppr (Mode(..), Style(..), renderStyle, style)
 
 ----------------------------------------------------------------
@@ -33,4 +33,4 @@ styleUnqualified :: PprStyle
 styleUnqualified = makeUserStyle neverQualify
 
 makeUserStyle :: PrintUnqualified -> PprStyle
-makeUserStyle sty = mkUserStyle sty AllTheWay
+makeUserStyle pu = mkUserStyle pu AllTheWay
