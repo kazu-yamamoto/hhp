@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, ScopedTypeVariables, TupleSections #-}
+
 module Hhp.GhcPkg (
     ghcPkgList
   , ghcPkgListEx
@@ -10,7 +11,7 @@ module Hhp.GhcPkg (
   , getPackageDbStack
   ) where
 
-import Config (cProjectVersionInt) -- ghc version
+import GHC.Settings.Config (cProjectVersionInt) -- ghc version
 
 import Control.Exception (SomeException(..))
 import qualified Control.Exception as E

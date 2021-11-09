@@ -1,12 +1,14 @@
 module Hhp.List (listModules, modules) where
 
-import DynFlags (DynFlags)
 import GHC (Ghc)
 import qualified GHC as G
-import Module (moduleNameString, moduleName)
-import Packages (lookupModuleInAllPackages, listVisibleModuleNames)
 
-import Control.Exception (SomeException(..))
+import GHC.Driver.Session (DynFlags(..))
+import GHC.Unit.Module.Name (moduleNameString)
+import GHC.Unit.State (lookupModuleInAllUnits, listVisibleModuleNames)
+import GHC.Unit.Types (moduleName)
+
+import Control.Monad.Catch
 import Data.List (nub, sort)
 
 import Hhp.GHCApi
@@ -22,7 +24,7 @@ listModules opt cradle = withGHC' $ do
 
 -- | Listing installed modules.
 modules :: Options -> Ghc String
-modules opt = convert opt . arrange <$> (getModules `G.gcatch` handler)
+modules opt = convert opt . arrange <$> (getModules `catch` handler)
   where
     getModules = listVisibleModules <$> G.getSessionDynFlags
     arrange = nub . sort . map (moduleNameString . moduleName)
@@ -33,5 +35,6 @@ modules opt = convert opt . arrange <$> (getModules `G.gcatch` handler)
 listVisibleModules :: DynFlags -> [G.Module]
 listVisibleModules df = mods
   where
-    modNames = listVisibleModuleNames df
-    mods = [ m | mn <- modNames, (m, _) <- lookupModuleInAllPackages df mn ]
+    state = unitState df
+    modNames = listVisibleModuleNames state
+    mods = [ m | mn <- modNames, (m, _) <- lookupModuleInAllUnits state mn ]

@@ -8,12 +8,11 @@ module Hhp.Find (
   , lookupSym
   ) where
 
-import GHC (Ghc, DynFlags, Module, ModuleInfo)
+import GHC (Ghc, DynFlags(unitState), Module, ModuleInfo)
 import qualified GHC as G
-import Module (Module(..))
-import Outputable (ppr)
-import PackageConfig (PackageConfig, exposedModules, packageConfigId)
-import Packages (listPackageConfigMap)
+import GHC.Unit.Info (UnitInfo, unitExposedModules, mkUnit)
+import GHC.Unit.State (listUnitInfo)
+import GHC.Utils.Outputable (ppr)
 
 import Control.DeepSeq (force)
 import Data.Function (on)
@@ -24,7 +23,6 @@ import Data.Maybe (fromMaybe)
 
 import Hhp.Doc (showOneLine, styleUnqualified)
 import Hhp.GHCApi
-import Hhp.Gap (getModuleName)
 import Hhp.Types
 
 -- | Type of key for `SymMdlDb`.
@@ -70,11 +68,11 @@ toNameModule dflag (m,Just inf) = map (\name -> (toStr name, mdl)) names
     toStr = showOneLine dflag (styleUnqualified dflag) . ppr
 
 packageModules :: DynFlags -> [Module]
-packageModules dflag = concatMap fromPackageConfig $ listPackageConfigMap dflag
+packageModules dflag = concatMap fromUnitInfo $ listUnitInfo $ unitState dflag
 
-fromPackageConfig :: PackageConfig -> [Module]
-fromPackageConfig pkgcnf = modules
+fromUnitInfo :: UnitInfo -> [Module]
+fromUnitInfo uinfo = modules
   where
-    uid = packageConfigId pkgcnf -- check me
-    moduleNames = map getModuleName $ exposedModules pkgcnf
-    modules = map (Module uid) moduleNames
+    uid = mkUnit uinfo
+    moduleNames = map fst $ unitExposedModules uinfo
+    modules = map (G.mkModule uid) moduleNames

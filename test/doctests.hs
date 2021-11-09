@@ -8,10 +8,6 @@ main :: IO ()
 main = doctest [
     "-package"
   , "ghc"
-#if MIN_VERSION_hlint(2,1,18)
-  , "-hide-package"
-  , "ghc-lib-parser"
-#endif
   , "-ilib/"
   , "-idist/build/autogen/"
   , "-optP-include"

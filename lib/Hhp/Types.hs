@@ -4,7 +4,7 @@
 
 module Hhp.Types where
 
-import qualified Exception as GE
+import Control.Monad.Catch
 import GHC (Ghc)
 
 import Control.Exception (IOException)
@@ -203,5 +203,5 @@ data CompilerOptions = CompilerOptions {
   } deriving (Eq, Show)
 
 instance Alternative Ghc where
-    x <|> y = x `GE.gcatch` (\(_ :: IOException) -> y)
+    x <|> y = x `catch` (\(_ :: IOException) -> y)
     empty = undefined

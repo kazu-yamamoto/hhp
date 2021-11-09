@@ -27,21 +27,20 @@ module Hhp.Ghc (
   , Ghc
   ) where
 
+import GHC (Ghc, runGhc, ModSummary, mgModSummaries, getModuleGraph,moduleNameString, moduleName, ms_mod)
+import qualified GHC as G
+import GHC.Utils.Monad (liftIO)
+
+import Data.List (find)
+import Data.Maybe (fromMaybe)
+
 import Hhp.Boot
 import Hhp.Browse
 import Hhp.Check
 import Hhp.Find
 import Hhp.GHCApi
-import Hhp.Gap
 import Hhp.Info
 import Hhp.List
-
-import GHC (runGhc)
-import CoreMonad (liftIO)
-import GHC (Ghc)
-import qualified GHC as G
-
-import Data.Maybe (fromMaybe)
 
 getMainFileToBeDeleted :: FilePath -> Ghc (Maybe FilePath)
 getMainFileToBeDeleted file = isSameMainFile file <$> getModSummaryForMain
@@ -56,3 +55,8 @@ isSameMainFile file (Just x)
     -- G.ms_hspp_file x is a temporary file with CPP.
     -- this is a just fake.
     mainfile = fromMaybe (G.ms_hspp_file x) mmainfile
+
+getModSummaryForMain :: Ghc (Maybe ModSummary)
+getModSummaryForMain = find isMain . mgModSummaries <$> getModuleGraph
+  where
+    isMain m = moduleNameString (moduleName (ms_mod m)) == "Main"

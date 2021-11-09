@@ -7,20 +7,17 @@ module Hhp.Logger (
   , getSrcSpan
   ) where
 
-import Bag (Bag, bagToList)
-import CoreMonad (liftIO)
-import DynFlags (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
-import ErrUtils
-import Exception (ghandle)
-import FastString (unpackFS)
 import GHC (Ghc, DynFlags(..), SrcSpan(..))
-#if __GLASGOW_HASKELL__ < 808
-import GHC (Severity(SevError))
-#endif
 import qualified GHC as G
-import HscTypes (SourceError, srcErrorMessages)
-import Outputable (PprStyle, SDoc)
+import GHC.Data.Bag (Bag, bagToList)
+import GHC.Data.FastString (unpackFS)
+import GHC.Driver.Session (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
+import GHC.Driver.Types (SourceError, srcErrorMessages)
+import GHC.Utils.Error
+import GHC.Utils.Monad (liftIO)
+import GHC.Utils.Outputable (PprStyle, SDoc, defaultDumpStyle)
 
+import Control.Monad.Catch
 import Data.IORef (IORef, newIORef, readIORef, writeIORef, modifyIORef)
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
@@ -46,8 +43,8 @@ readAndClearLogRef opt (LogRef ref) = do
     return $! convert opt (b [])
 
 appendLogRef :: DynFlags -> LogRef -> LogAction
-appendLogRef df (LogRef ref) _ _ sev src style msg = do
-        let !l = ppMsg src sev df style msg
+appendLogRef df (LogRef ref) _ _ sev src msg = do
+        let !l = ppMsg src sev df msg
         modifyIORef ref (\b -> b . (l:))
 
 ----------------------------------------------------------------
@@ -56,7 +53,7 @@ appendLogRef df (LogRef ref) _ _ sev src style msg = do
 --   executes a body. Log messages are returned as 'String'.
 --   Right is success and Left is failure.
 withLogger :: Options -> (DynFlags -> DynFlags) -> Ghc () -> Ghc (Either String String)
-withLogger opt setDF body = ghandle (sourceError opt) $ do
+withLogger opt setDF body = handle (sourceError opt) $ do
     logref <- liftIO newLogRef
     withDynFlags (setLogger logref . setDF) $ do
         withCmdFlags wflags $ do
@@ -82,17 +79,17 @@ errBagToStrList dflag style = map (ppErrMsg dflag style) . reverse . bagToList
 ----------------------------------------------------------------
 
 ppErrMsg :: DynFlags -> PprStyle -> ErrMsg -> String
-ppErrMsg dflag style err = ppMsg spn SevError dflag style msg -- ++ ext
+ppErrMsg dflag _style_fixme err = ppMsg spn SevError dflag msg -- ++ ext
    where
      spn = errMsgSpan err
      msg = pprLocErrMsg err
      -- fixme
 --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
 
-ppMsg :: SrcSpan -> Severity-> DynFlags -> PprStyle -> SDoc -> String
-ppMsg spn sev dflag style msg = prefix ++ cts
+ppMsg :: SrcSpan -> Severity-> DynFlags -> SDoc -> String
+ppMsg spn sev dflag msg = prefix ++ cts
   where
-    cts  = showPage dflag style msg
+    cts  = showPage dflag defaultDumpStyle msg
     defaultPrefix
       | isDumpSplices dflag = ""
       | otherwise           = checkErrorPrefix
@@ -110,15 +107,15 @@ showSeverityCaption SevWarning = "Warning: "
 showSeverityCaption _          = ""
 
 getSrcFile :: SrcSpan -> Maybe String
-getSrcFile (G.RealSrcSpan spn) = Just . unpackFS . G.srcSpanFile $ spn
-getSrcFile _                   = Nothing
+getSrcFile (G.RealSrcSpan spn _) = Just . unpackFS . G.srcSpanFile $ spn
+getSrcFile _                     = Nothing
 
 isDumpSplices :: DynFlags -> Bool
 isDumpSplices dflag = dopt Opt_D_dump_splices dflag
 
 getSrcSpan :: SrcSpan -> Maybe (Int,Int,Int,Int)
-getSrcSpan (RealSrcSpan spn) = Just ( G.srcSpanStartLine spn
-                                    , G.srcSpanStartCol spn
-                                    , G.srcSpanEndLine spn
-                                    , G.srcSpanEndCol spn)
+getSrcSpan (RealSrcSpan spn _) = Just ( G.srcSpanStartLine spn
+                                      , G.srcSpanStartCol spn
+                                      , G.srcSpanEndLine spn
+                                      , G.srcSpanEndCol spn)
 getSrcSpan _ = Nothing

@@ -8,13 +8,12 @@ import System.Directory
 import System.FilePath
 import Test.Hspec
 
+import Hhp (cProjectVersionInt)
 import Hhp.CabalApi
 import Hhp.Cradle
 import Hhp.Types
 
 import Dir
-
-import Config (cProjectVersionInt) -- ghc version
 
 ghcVersion :: Int
 ghcVersion = read cProjectVersionInt

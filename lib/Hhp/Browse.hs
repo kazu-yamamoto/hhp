@@ -3,22 +3,21 @@ module Hhp.Browse (
   , browse
   ) where
 
-import Exception (ghandle)
-import FastString (mkFastString)
 import GHC (Ghc, GhcException(CmdLineError), ModuleInfo, Name, TyThing, DynFlags, Type, TyCon)
 import qualified GHC as G
-import Name (getOccString)
-import Outputable (ppr, Outputable)
-import TyCon (isAlgTyCon)
-import Type (dropForAlls, splitFunTy_maybe, isPredTy)
+import GHC.Core.TyCon (isAlgTyCon)
+import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy)
+import GHC.Core.Type (mkVisFunTy)
+import GHC.Data.FastString (mkFastString)
+import GHC.Types.Name (getOccString)
+import GHC.Utils.Outputable (ppr, Outputable)
 
-import Control.Exception (SomeException(..))
+import Control.Monad.Catch
 import Data.Char (isAlpha)
 import Data.List (sort)
 import Data.Maybe (catMaybes)
 
 import Hhp.Doc (showPage, styleUnqualified)
-import Hhp.Gap
 import Hhp.GHCApi
 import Hhp.Things
 import Hhp.Types
@@ -55,9 +54,9 @@ browse opt pkgmdl = do
     -- to browse a local module you need to load it first.
     -- If CmdLineError is signalled, we assume the user
     -- tried browsing a local module.
-    getModule = browsePackageModule `G.gcatch` fallback `G.gcatch` handler
+    getModule = browsePackageModule `catch` fallback `catch` handler
     browsePackageModule = G.findModule mdlname mpkgid >>= G.getModuleInfo
-    browseLocalModule = ghandle handler $ do
+    browseLocalModule = handle handler $ do
       setTargetFiles [mdl]
       G.findModule mdlname Nothing >>= G.getModuleInfo
     fallback (CmdLineError _) = browseLocalModule
@@ -137,10 +136,10 @@ removeForAlls ty = removeForAlls' ty' tty'
     ty'  = dropForAlls ty
     tty' = splitFunTy_maybe ty'
 
-removeForAlls' :: Type -> Maybe (Type, Type) -> Type
+removeForAlls' :: Type -> Maybe (Type, Type, Type) -> Type
 removeForAlls' ty Nothing = ty
-removeForAlls' ty (Just (pre, ftype))
-    | isPredTy pre        = mkFunTy pre (dropForAlls ftype)
+removeForAlls' ty (Just (pre, ftype, x))
+    | isPredTy pre        = mkVisFunTy pre (dropForAlls ftype) x
     | otherwise           = ty
 
 showOutputable :: Outputable a => DynFlags -> a -> String

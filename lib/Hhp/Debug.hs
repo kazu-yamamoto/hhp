@@ -1,6 +1,6 @@
 module Hhp.Debug (debugInfo, rootInfo) where
 
-import CoreMonad (liftIO)
+import GHC.Utils.Monad (liftIO)
 
 import Control.Applicative ((<|>))
 import Data.List (intercalate)

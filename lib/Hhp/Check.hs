@@ -5,8 +5,8 @@ module Hhp.Check (
   , expand
   ) where
 
-import DynFlags (dopt_set, DumpFlag(Opt_D_dump_splices))
 import GHC (Ghc, DynFlags(..))
+import GHC.Driver.Session (dopt_set, DumpFlag(Opt_D_dump_splices))
 
 import Hhp.GHCApi
 import Hhp.Logger

@@ -1,6 +1,6 @@
 module Hhp.Flag where
 
-import DynFlags
+import GHC.Driver.Session
 
 import Hhp.Types
 

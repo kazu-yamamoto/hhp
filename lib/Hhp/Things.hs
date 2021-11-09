@@ -4,21 +4,19 @@ module Hhp.Things (
   , infoThing
   ) where
 
-import ConLike (ConLike(..))
-import FamInstEnv
 import GHC
-import HscTypes
-import qualified InstEnv
-import NameSet
-import Outputable
-import PatSyn
-import PprTyThing
-import Var (varType)
+import GHC.Core.ConLike (ConLike(..))
+import GHC.Core.FamInstEnv
+import qualified GHC.Core.InstEnv as InstEnv
+import GHC.Core.PatSyn
+import GHC.Core.Ppr.TyThing
+import GHC.Driver.Types
+import GHC.Types.Name.Set
+import GHC.Types.Var (varType)
+import GHC.Utils.Outputable as Outputable
 
 import Data.List (intersperse)
 import Data.Maybe (catMaybes)
-
-import Hhp.Gap (getTyThing, fixInfo)
 
 -- from ghc/InteractiveUI.hs
 
@@ -31,7 +29,7 @@ data GapThing = GtA Type
 
 fromTyThing :: TyThing -> GapThing
 fromTyThing (AnId i)                   = GtA $ varType i
-fromTyThing (AConLike (RealDataCon d)) = GtA $ dataConUserType d
+fromTyThing (AConLike (RealDataCon d)) = GtA $ dataConWrapperType d
 fromTyThing (AConLike (PatSynCon p))   = GtPatSyn p
 fromTyThing (ATyCon t)                 = GtT t
 fromTyThing _                          = GtN
@@ -44,6 +42,9 @@ infoThing str = do
     mb_stuffs <- mapM (getInfo False) names
     let filtered = filterOutChildren getTyThing $ catMaybes mb_stuffs
     return $ vcat (intersperse (text "") $ map (pprInfo . fixInfo) filtered)
+  where
+    getTyThing (t,_,_,_,_) = t
+    fixInfo (t,f,cs,fs,_) = (t,f,cs,fs)
 
 filterOutChildren :: (a -> TyThing) -> [a] -> [a]
 filterOutChildren get_thing xs

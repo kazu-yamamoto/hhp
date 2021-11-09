@@ -7,20 +7,22 @@ module Hhp.Info (
   , types
   ) where
 
-import CoreMonad (liftIO)
-import CoreUtils (exprType)
-import Desugar (deSugarExpr)
-import Exception (ghandle, SomeException(..))
-import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L))
+import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, mg_arg_tys, mg_res_ty, LHsBind, LHsExpr, Type, Located, Pat)
 import qualified GHC as G
-
-import HscTypes (ModSummary)
-import Outputable (PprStyle)
-import PprTyThing
-import TcHsSyn (hsPatType)
+import GHC.Core.Ppr.TyThing
+import GHC.Core.Type (mkVisFunTys)
+import GHC.Core.Utils (exprType)
+import GHC.Hs.Binds (HsBindLR(..))
+import GHC.Hs.Expr (MatchGroup, MatchGroupTc(..))
+import GHC.Hs.Extension (GhcTc)
+import GHC.HsToCore (deSugarExpr)
+import GHC.Tc.Utils.Zonk (hsPatType)
+import GHC.Utils.Monad (liftIO)
+import GHC.Utils.Outputable (PprStyle)
 
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)
+import Control.Monad.Catch
 import Data.Function (on)
 import Data.List (sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -28,7 +30,6 @@ import Data.Ord as O
 
 import Hhp.Doc (showPage, showOneLine, getStyle)
 import Hhp.GHCApi
-import Hhp.Gap
 import Hhp.Logger (getSrcSpan)
 import Hhp.Syb
 import Hhp.Things
@@ -51,7 +52,7 @@ info :: Options
      -> FilePath     -- ^ A target file.
      -> Expression   -- ^ A Haskell expression.
      -> Ghc String
-info opt file expr = convert opt <$> ghandle handler body
+info opt file expr = convert opt <$> handle handler body
   where
     body = inModuleContext file $ \dflag style -> do
         sdoc <- infoThing expr
@@ -77,7 +78,7 @@ types :: Options
       -> Int          -- ^ Line number.
       -> Int          -- ^ Column number.
       -> Ghc String
-types opt file lineNo colNo = convert opt <$> ghandle handler body
+types opt file lineNo colNo = convert opt <$> handle handler body
   where
     body = inModuleContext file $ \dflag style -> do
         modSum <- fileModSummary file
@@ -85,7 +86,11 @@ types opt file lineNo colNo = convert opt <$> ghandle handler body
         return $ map (toTup dflag style) $ sortBy (cmp `on` fst) srcSpanTypes
     handler (SomeException _) = return []
 
-getSrcSpanType :: G.ModSummary -> Int -> Int -> Ghc [(SrcSpan, Type)]
+type LExpression = LHsExpr GhcTc
+type LBinding    = LHsBind GhcTc
+type LPattern    = Located (Pat GhcTc)
+
+getSrcSpanType :: ModSummary -> Int -> Int -> Ghc [(SrcSpan, Type)]
 getSrcSpanType modSum lineNo colNo = do
     p <- G.parseModule modSum
     tcm@TypecheckedModule{tm_typechecked_source = tcs} <- G.typecheckModule p
@@ -127,12 +132,12 @@ inModuleContext file action =
 
 fileModSummary :: FilePath -> Ghc ModSummary
 fileModSummary file = do
-    mss <- getModSummaries <$> G.getModuleGraph
+    mss <- mgModSummaries <$> G.getModuleGraph
     let [ms] = filter (\m -> G.ml_hs_file (G.ms_location m) == Just file) mss
     return ms
 
 withContext :: Ghc a -> Ghc a
-withContext action = G.gbracket setup teardown body
+withContext action = bracket setup teardown body
   where
     setup = G.getContext
     teardown = setCtx
@@ -140,7 +145,7 @@ withContext action = G.gbracket setup teardown body
         topImports >>= setCtx
         action
     topImports = do
-        mss <- getModSummaries <$> G.getModuleGraph
+        mss <- mgModSummaries <$> G.getModuleGraph
         map modName <$> filterM isTop mss
     isTop mos = lookupMod mos <|> returnFalse
     lookupMod mos = G.lookupModule (G.ms_mod_name mos) Nothing >> return True
@@ -157,14 +162,14 @@ instance HasType LExpression where
     getType _ e = do
         hs_env <- G.getSession
         mbe <- liftIO $ snd <$> deSugarExpr hs_env e
-        return $ (G.getLoc e, ) . CoreUtils.exprType <$> mbe
+        return $ (G.getLoc e, ) . exprType <$> mbe
 
 instance HasType LBinding where
     getType _ (L spn FunBind{fun_matches = m}) = return $ Just (spn, typ)
       where
-        in_tys  = inTypes m
-        out_typ = outType m
-        typ = mkFunTys in_tys out_typ
+        in_tys  = mg_arg_tys $ mg_ext m
+        out_typ = mg_res_ty  $ mg_ext m
+        typ = mkVisFunTys in_tys out_typ
     getType _ _ = return Nothing
 
 instance HasType LPattern where

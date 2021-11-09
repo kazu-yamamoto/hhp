@@ -17,18 +17,16 @@ module Hhp.GHCApi (
   , setWarnTypedHoles
   ) where
 
-import CoreMonad (liftIO)
-import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages)
-                ,WarningFlag(Opt_WarnTypedHoles)
-                ,gopt_set, xopt_set, wopt_set
-                ,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..))
-import Exception (ghandle, SomeException(..))
 import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
 import qualified GHC as G
+import qualified GHC.Data.EnumSet as E (EnumSet, empty)
+import GHC.Driver.Session (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages),WarningFlag(Opt_WarnTypedHoles),gopt_set, xopt_set, wopt_set,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), WarningFlag)
 import GHC.LanguageExtensions (Extension(..))
+import GHC.Utils.Monad (liftIO)
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
+import Control.Monad.Catch
 import Data.Maybe (isJust, fromJust)
 import System.Exit (exitSuccess)
 import System.IO (hPutStr, hPrint, stderr)
@@ -36,7 +34,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcess)
 
 import Hhp.CabalApi
-import qualified Hhp.Gap as Gap
 import Hhp.GhcPkg
 import Hhp.Types
 
@@ -56,7 +53,7 @@ getSystemLibDir = do
 withGHC :: FilePath  -- ^ A target file displayed in an error message.
         -> Ghc a -- ^ 'Ghc' actions created by the Ghc utilities.
         -> IO a
-withGHC file body = ghandle ignore $ withGHC' body
+withGHC file body = handle ignore $ withGHC' body
   where
     ignore :: SomeException -> IO a
     ignore e = do
@@ -119,7 +116,7 @@ initSession build Options{} CompilerOptions{..} = do
       $ addPackageFlags depPackages df)
 
 setEmptyLogger :: DynFlags -> DynFlags
-setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ _ -> return () }
+setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ -> return () }
 
 ----------------------------------------------------------------
 
@@ -175,7 +172,7 @@ getDynamicFlags = do
     G.runGhc mlibdir G.getSessionDynFlags
 
 withDynFlags :: (DynFlags -> DynFlags) -> Ghc a -> Ghc a
-withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
+withDynFlags setFlag body = bracket setup teardown (\_ -> body)
   where
     setup = do
         dflag <- G.getSessionDynFlags
@@ -184,7 +181,7 @@ withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
     teardown = void . G.setSessionDynFlags
 
 withCmdFlags :: [GHCOption] -> Ghc a -> Ghc a
-withCmdFlags flags body = G.gbracket setup teardown (\_ -> body)
+withCmdFlags flags body = bracket setup teardown (\_ -> body)
   where
     setup = do
         dflag <- G.getSessionDynFlags >>= addCmdOpts flags
@@ -212,14 +209,14 @@ setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWild
 
 -- | Set 'DynFlags' equivalent to "-w:".
 setNoWaringFlags :: DynFlags -> DynFlags
-setNoWaringFlags df = df { warningFlags = Gap.emptyWarnFlags}
+setNoWaringFlags df = df { warningFlags = E.empty}
 
 -- | Set 'DynFlags' equivalent to "-Wall".
 setAllWaringFlags :: DynFlags -> DynFlags
 setAllWaringFlags df = df { warningFlags = allWarningFlags }
 
 {-# NOINLINE allWarningFlags #-}
-allWarningFlags :: Gap.WarnFlags
+allWarningFlags :: E.EnumSet WarningFlag
 allWarningFlags = unsafePerformIO $ do
     mlibdir <- getSystemLibDir
     G.runGhc mlibdir $ do
