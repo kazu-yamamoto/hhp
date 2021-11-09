@@ -108,8 +108,8 @@ initSession :: Build
             -> Ghc ()
 initSession build Options{} CompilerOptions{..} = do
     df <- G.getSessionDynFlags
-    void $ G.setSessionDynFlags =<< (addCmdOpts ghcOptions
-      $ setLinkerOptions
+    void $ G.setSessionDynFlags =<< addCmdOpts ghcOptions
+      ( setLinkerOptions
       $ setIncludeDirs includeDirs
       $ setBuildEnv build
       $ setEmptyLogger
@@ -172,7 +172,7 @@ getDynamicFlags = do
     G.runGhc mlibdir G.getSessionDynFlags
 
 withDynFlags :: (DynFlags -> DynFlags) -> Ghc a -> Ghc a
-withDynFlags setFlag body = bracket setup teardown (\_ -> body)
+withDynFlags setFlag body = bracket setup teardown (const body)
   where
     setup = do
         dflag <- G.getSessionDynFlags
@@ -181,7 +181,7 @@ withDynFlags setFlag body = bracket setup teardown (\_ -> body)
     teardown = void . G.setSessionDynFlags
 
 withCmdFlags :: [GHCOption] -> Ghc a -> Ghc a
-withCmdFlags flags body = bracket setup teardown (\_ -> body)
+withCmdFlags flags body = bracket setup teardown (const body)
   where
     setup = do
         dflag <- G.getSessionDynFlags >>= addCmdOpts flags

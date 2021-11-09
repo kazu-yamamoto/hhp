@@ -191,9 +191,7 @@ cabalAllTargets pd = do
     testTargets <- mapM getTestTarget $ P.testSuites pd
     return (libTargets,concat exeTargets,concat testTargets,benchTargets)
   where
-    lib = case P.library pd of
-            Nothing -> []
-            Just l -> P.explicitLibModules l
+    lib = maybe [] P.explicitLibModules $ P.library pd
 
     libTargets = map toModuleString lib
     benchTargets = map toModuleString $ concatMap P.benchmarkModules $ P.benchmarks  pd
