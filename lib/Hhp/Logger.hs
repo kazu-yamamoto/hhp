@@ -68,7 +68,7 @@ withLogger opt setDF body = handle (sourceError opt) $ do
 sourceError :: Options -> SourceError -> Ghc (Either String String)
 sourceError opt err = do
     dflag <- G.getSessionDynFlags
-    style <- getStyle dflag
+    style <- getStyle
     let ret = convert opt . errBagToStrList dflag style . srcErrorMessages $ err
     return (Left ret)
 

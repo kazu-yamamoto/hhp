@@ -143,4 +143,4 @@ removeForAlls' ty (Just (pre, ftype, x))
     | otherwise           = ty
 
 showOutputable :: Outputable a => DynFlags -> a -> String
-showOutputable dflag = unwords . lines . showPage dflag (styleUnqualified dflag) . ppr
+showOutputable dflag = unwords . lines . showPage dflag styleUnqualified . ppr

@@ -125,7 +125,7 @@ inModuleContext file action =
     setTargetFiles [file]
     withContext $ do
         dflag <- G.getSessionDynFlags
-        style <- getStyle dflag
+        style <- getStyle
         action dflag style
 
 ----------------------------------------------------------------

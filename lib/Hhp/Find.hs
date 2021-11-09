@@ -65,7 +65,7 @@ toNameModule dflag (m,Just inf) = map (\name -> (toStr name, mdl)) names
   where
     mdl = G.moduleNameString (G.moduleName m)
     names = G.modInfoExports inf
-    toStr = showOneLine dflag (styleUnqualified dflag) . ppr
+    toStr = showOneLine dflag styleUnqualified . ppr
 
 packageModules :: DynFlags -> [Module]
 packageModules dflag = concatMap fromUnitInfo $ listUnitInfo $ unitState dflag
