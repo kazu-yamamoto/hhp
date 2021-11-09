@@ -7,19 +7,24 @@ module Hhp.Doc (
 
 import GHC (Ghc, DynFlags, getPrintUnqual, pprCols)
 import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, initSDocContext, runSDoc, PrintUnqualified, PprStyle, Depth(AllTheWay), mkUserStyle)
-import GHC.Utils.Ppr (Mode(..), Doc, Style(..), renderStyle, style)
+import GHC.Utils.Ppr (Mode(..), Style(..), renderStyle, style)
 
-makeUserStyle :: PrintUnqualified -> PprStyle
-makeUserStyle sty = mkUserStyle sty AllTheWay
-
-withPprStyleDoc :: DynFlags -> PprStyle -> SDoc -> Doc
-withPprStyleDoc dflags sty d = runSDoc d (initSDocContext dflags sty)
+----------------------------------------------------------------
 
 showPage :: DynFlags -> PprStyle -> SDoc -> String
-showPage dflag stl = showDocWith dflag PageMode . withPprStyleDoc dflag stl
+showPage = showSDocWithMode PageMode
 
 showOneLine :: DynFlags -> PprStyle -> SDoc -> String
-showOneLine dflag stl = showDocWith dflag OneLineMode . withPprStyleDoc dflag stl
+showOneLine = showSDocWithMode OneLineMode
+
+showSDocWithMode :: Mode -> DynFlags -> PprStyle -> SDoc -> String
+showSDocWithMode md dflags pprstyle sdoc = renderStyle style' doc
+  where
+    ctx = initSDocContext dflags pprstyle
+    doc = runSDoc sdoc ctx
+    style' = style { mode = md, lineLength = pprCols dflags }
+
+----------------------------------------------------------------
 
 getStyle :: Ghc PprStyle
 getStyle = makeUserStyle <$> getPrintUnqual
@@ -27,7 +32,5 @@ getStyle = makeUserStyle <$> getPrintUnqual
 styleUnqualified :: PprStyle
 styleUnqualified = makeUserStyle neverQualify
 
-showDocWith :: DynFlags -> Mode -> Doc -> String
-showDocWith dflags md = renderStyle mstyle
-  where
-    mstyle = style { mode = md, lineLength = pprCols dflags }
+makeUserStyle :: PrintUnqualified -> PprStyle
+makeUserStyle sty = mkUserStyle sty AllTheWay
