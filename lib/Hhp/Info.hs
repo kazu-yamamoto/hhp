@@ -7,13 +7,13 @@ module Hhp.Info (
   , types
   ) where
 
-import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, mg_arg_tys, mg_res_ty, LHsBind, LHsExpr, Type, Located, Pat)
+import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, LHsExpr, Type, Located, Pat)
 import qualified GHC as G
 import GHC.Core.Ppr.TyThing
 import GHC.Core.Type (mkVisFunTys)
 import GHC.Core.Utils (exprType)
 import GHC.Hs.Binds (HsBindLR(..))
-import GHC.Hs.Expr (MatchGroup, MatchGroupTc(..))
+import GHC.Hs.Expr (MatchGroupTc(..))
 import GHC.Hs.Extension (GhcTc)
 import GHC.HsToCore (deSugarExpr)
 import GHC.Tc.Utils.Zonk (hsPatType)
