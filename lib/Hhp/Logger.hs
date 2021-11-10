@@ -12,11 +12,11 @@ import GHC.Data.Bag (Bag, bagToList)
 import GHC.Data.FastString (unpackFS)
 import GHC.Driver.Session (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
 import GHC.Driver.Types (SourceError, srcErrorMessages)
-import GHC.Utils.Error
+import GHC.Utils.Error (ErrMsg, Severity(..), errMsgSpan, pprLocErrMsg)
 import GHC.Utils.Monad (liftIO)
 import GHC.Utils.Outputable (PprStyle, SDoc, defaultDumpStyle)
 
-import Control.Monad.Catch
+import Control.Monad.Catch (handle)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef, modifyIORef)
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
@@ -85,7 +85,7 @@ ppErrMsg dflag _style_fixme err = ppMsg spn SevError dflag msg -- ++ ext
      -- fixme
 --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
 
-ppMsg :: SrcSpan -> Severity-> DynFlags -> SDoc -> String
+ppMsg :: SrcSpan -> Severity -> DynFlags -> SDoc -> String
 ppMsg spn sev dflag msg = prefix ++ cts
   where
     cts  = showPage dflag defaultDumpStyle msg

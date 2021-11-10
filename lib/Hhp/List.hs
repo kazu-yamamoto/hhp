@@ -8,7 +8,7 @@ import GHC.Unit.Module.Name (moduleNameString)
 import GHC.Unit.State (lookupModuleInAllUnits, listVisibleModuleNames)
 import GHC.Unit.Types (moduleName)
 
-import Control.Monad.Catch
+import Control.Monad.Catch (SomeException(..), catch)
 import Data.List (nub, sort)
 
 import Hhp.GHCApi

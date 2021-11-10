@@ -11,7 +11,7 @@ import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy, mkVisFunTy)
 import GHC.Data.FastString (mkFastString)
 import GHC.Types.Name (getOccString)
 
-import Control.Monad.Catch
+import Control.Monad.Catch (SomeException(..), handle, catch)
 import Data.Char (isAlpha)
 import Data.List (sort)
 import Data.Maybe (catMaybes)

@@ -22,7 +22,7 @@ import GHC.Utils.Outputable (PprStyle)
 
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)
-import Control.Monad.Catch
+import Control.Monad.Catch (SomeException(..), handle, bracket)
 import Data.Function (on)
 import Data.List (sortBy)
 import Data.Maybe (catMaybes, fromMaybe)

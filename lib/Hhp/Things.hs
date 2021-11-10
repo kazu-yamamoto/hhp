@@ -4,21 +4,20 @@ module Hhp.Things (
   , infoThing
   ) where
 
-import GHC
+import GHC (Type, TyCon, Ghc, Fixity, TyThing)
+import qualified GHC as G
 import GHC.Core.ConLike (ConLike(..))
-import GHC.Core.FamInstEnv
+import GHC.Core.FamInstEnv (pprFamInsts)
 import qualified GHC.Core.InstEnv as InstEnv
-import GHC.Core.PatSyn
-import GHC.Core.Ppr.TyThing
-import GHC.Driver.Types
-import GHC.Types.Name.Set
+import GHC.Core.PatSyn (PatSyn)
+import GHC.Core.Ppr.TyThing (pprTyThingInContextLoc)
+import GHC.Driver.Types (implicitTyThings)
+import GHC.Types.Name.Set (elemNameSet, mkNameSet)
 import GHC.Types.Var (varType)
 import GHC.Utils.Outputable as Outputable
 
 import Data.List (intersperse)
 import Data.Maybe (catMaybes)
-
--- from ghc/InteractiveUI.hs
 
 ----------------------------------------------------------------
 
@@ -28,18 +27,18 @@ data GapThing = GtA Type
               | GtPatSyn PatSyn
 
 fromTyThing :: TyThing -> GapThing
-fromTyThing (AnId i)                   = GtA $ varType i
-fromTyThing (AConLike (RealDataCon d)) = GtA $ dataConWrapperType d
-fromTyThing (AConLike (PatSynCon p))   = GtPatSyn p
-fromTyThing (ATyCon t)                 = GtT t
-fromTyThing _                          = GtN
+fromTyThing (G.AnId i)                   = GtA $ varType i
+fromTyThing (G.AConLike (RealDataCon d)) = GtA $ G.dataConWrapperType d
+fromTyThing (G.AConLike (PatSynCon p))   = GtPatSyn p
+fromTyThing (G.ATyCon t)                 = GtT t
+fromTyThing _                            = GtN
 
 ----------------------------------------------------------------
 
 infoThing :: String -> Ghc SDoc
 infoThing str = do
-    names <- parseName str
-    mb_stuffs <- mapM (getInfo False) names
+    names <- G.parseName str
+    mb_stuffs <- mapM (G.getInfo False) names
     let filtered = filterOutChildren getTyThing $ catMaybes mb_stuffs
     return $ vcat (intersperse (text "") $ map (pprInfo . fixInfo) filtered)
   where
@@ -48,11 +47,11 @@ infoThing str = do
 
 filterOutChildren :: (a -> TyThing) -> [a] -> [a]
 filterOutChildren get_thing xs
-    = [x | x <- xs, not (getName (get_thing x) `elemNameSet` implicits)]
+    = [x | x <- xs, not (G.getName (get_thing x) `elemNameSet` implicits)]
   where
-    implicits = mkNameSet [getName t | x <- xs, t <- implicitTyThings (get_thing x)]
+    implicits = mkNameSet [G.getName t | x <- xs, t <- implicitTyThings (get_thing x)]
 
-pprInfo :: (TyThing, GHC.Fixity, [InstEnv.ClsInst], [FamInst]) -> SDoc
+pprInfo :: (TyThing, GHC.Fixity, [InstEnv.ClsInst], [G.FamInst]) -> SDoc
 pprInfo (thing, fixity, insts, famInsts)
     = pprTyThingInContextLoc thing
    $$ show_fixity fixity
@@ -60,5 +59,5 @@ pprInfo (thing, fixity, insts, famInsts)
    $$ pprFamInsts famInsts
   where
     show_fixity fx
-      | fx == defaultFixity = Outputable.empty
-      | otherwise           = ppr fx <+> ppr (getName thing)
+      | fx == G.defaultFixity = Outputable.empty
+      | otherwise             = ppr fx <+> ppr (G.getName thing)

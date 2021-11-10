@@ -26,7 +26,7 @@ import GHC.Utils.Monad (liftIO)
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
-import Control.Monad.Catch
+import Control.Monad.Catch (SomeException, handle, bracket)
 import Data.Maybe (isJust, fromJust)
 import System.Exit (exitSuccess)
 import System.IO (hPutStr, hPrint, stderr)

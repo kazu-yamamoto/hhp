@@ -6,7 +6,7 @@ module Hhp.Syb (
 
 import GHC (TypecheckedSource, Located, GenLocated(L), isGoodSrcSpan, spans)
 
-import Data.Generics
+import Data.Generics (Typeable, GenericQ, mkQ, gmapQ)
 
 listifySpans :: Typeable a => TypecheckedSource -> (Int, Int) -> [Located a]
 listifySpans tcs lc = everything' (++) ([] `mkQ` (\x -> [x | p x])) tcs

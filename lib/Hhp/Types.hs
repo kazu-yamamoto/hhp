@@ -4,7 +4,7 @@
 
 module Hhp.Types where
 
-import Control.Monad.Catch
+import Control.Monad.Catch (catch)
 import GHC (Ghc)
 
 import Control.Exception (IOException)
