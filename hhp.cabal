@@ -117,12 +117,11 @@ Test-Suite doctest
 
 Test-Suite spec
   Default-Language:     Haskell2010
-  Main-Is:              Main.hs
+  Main-Is:              Spec.hs
   Hs-Source-Dirs:       test, lib
   GHC-Options:          -Wall
   Type:                 exitcode-stdio-1.0
   Other-Modules:        Dir
-                        Spec
                         BrowseSpec
                         CabalApiSpec
                         CheckSpec
@@ -167,7 +166,7 @@ Test-Suite spec
                       , syb
                       , hlint >= 1.7.1
                       , ghc-boot
-  build-tool-depends: hspec-discover:hspec-discover
+  build-tool-depends: hspec-discover:hspec-discover == 2.*
 
 Source-Repository head
   Type:                 git
