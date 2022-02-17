@@ -56,6 +56,11 @@ spec = do
             dirs <- cabalSourceDirs . cabalAllBuildInfo <$> parseCabalFile "test/data/cabalapi.cabal"
             dirs `shouldBe` [".", "test"]
 
+    describe "cabal-subLibraries" $ do
+        it "dependent packages with sublib" $ do
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-sublib/check-sublib.cabal"
+            pkgs `shouldBe` ["array", "base", "bytestring"]
+
 {-
     describe "cabalAllBuildInfo" $ do
         it "extracts build info" $ do
