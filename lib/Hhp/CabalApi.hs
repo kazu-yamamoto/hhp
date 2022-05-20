@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Hhp.CabalApi (
@@ -27,6 +28,9 @@ import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 import Distribution.Types.Flag (mkFlagAssignment)
 import Distribution.Types.PackageName (unPackageName)
+#if MIN_VERSION_Cabal(3,6,0)
+import Distribution.Utils.Path (getSymbolicPath, SymbolicPath)
+#endif
 
 import GHC.Utils.Monad (liftIO)
 
@@ -163,7 +167,7 @@ cabalDependPackages bis = uniqueAndSort pkgs
 
 -- | Extracting include directories for modules.
 cabalSourceDirs :: [BuildInfo] -> [IncludeDir]
-cabalSourceDirs bis = uniqueAndSort $ concatMap P.hsSourceDirs bis
+cabalSourceDirs bis = uniqueAndSort $ concatMap (map toPath . P.hsSourceDirs) bis
 
 ----------------------------------------------------------------
 
@@ -206,12 +210,20 @@ cabalAllTargets pd = do
     getTestTarget ts =
        case P.testInterface ts of
         (TestSuiteExeV10 _ filePath) -> do
-          let maybeTests = [p </> e | p <- P.hsSourceDirs $ P.testBuildInfo ts, e <- [filePath]]
+          let maybeTests = [toPath p </> e | p <- P.hsSourceDirs $ P.testBuildInfo ts, e <- [filePath]]
           liftIO $ filterM doesFileExist maybeTests
         (TestSuiteLibV09 _ moduleName) -> return [toModuleString moduleName]
         (TestSuiteUnsupported _)       -> return []
 
     getExecutableTarget :: Executable -> IO [String]
     getExecutableTarget exe = do
-      let maybeExes = [p </> e | p <- P.hsSourceDirs $ P.buildInfo exe, e <- [P.modulePath exe]]
+      let maybeExes = [toPath p </> e | p <- P.hsSourceDirs $ P.buildInfo exe, e <- [P.modulePath exe]]
       liftIO $ filterM doesFileExist maybeExes
+
+#if MIN_VERSION_Cabal(3,6,0)
+toPath :: SymbolicPath from to -> FilePath
+toPath = getSymbolicPath
+#else
+toPath :: String -> String
+toPath = id
+#endif

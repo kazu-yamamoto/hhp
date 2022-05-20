@@ -8,11 +8,10 @@ module Hhp.Logger (
 
 import GHC (Ghc, DynFlags(..), SrcSpan(..))
 import qualified GHC as G
-import GHC.Data.Bag (Bag, bagToList)
+import GHC.Data.Bag (bagToList)
 import GHC.Data.FastString (unpackFS)
-import GHC.Driver.Session (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
-import GHC.Driver.Types (SourceError, srcErrorMessages)
-import GHC.Utils.Error (ErrMsg, Severity(..), errMsgSpan, pprLocErrMsg)
+import GHC.Driver.Session (dopt, DumpFlag(Opt_D_dump_splices))
+import GHC.Utils.Error (Severity(..), errMsgSpan)
 import GHC.Utils.Monad (liftIO)
 import GHC.Utils.Outputable (PprStyle, SDoc, defaultDumpStyle)
 
@@ -23,6 +22,7 @@ import Data.Maybe (fromMaybe)
 import System.FilePath (normalise)
 
 import Hhp.Doc (showPage, getStyle)
+import Hhp.Gap
 import Hhp.GHCApi (withDynFlags, withCmdFlags)
 import Hhp.Types (Options(..), convert)
 
@@ -42,9 +42,9 @@ readAndClearLogRef opt (LogRef ref) = do
     return $! convert opt (b [])
 
 appendLogRef :: LogRef -> LogAction
-appendLogRef (LogRef ref) df _ sev src msg = do
-        let !l = ppMsg src sev df msg
-        modifyIORef ref (\b -> b . (l:))
+appendLogRef (LogRef ref) df _mc sev src msg = do
+    let !l = ppMsg src sev df msg
+    modifyIORef ref (\b -> b . (l:))
 
 ----------------------------------------------------------------
 
@@ -54,12 +54,12 @@ appendLogRef (LogRef ref) df _ sev src msg = do
 withLogger :: Options -> (DynFlags -> DynFlags) -> Ghc () -> Ghc (Either String String)
 withLogger opt setDF body = handle (sourceError opt) $ do
     logref <- liftIO newLogRef
-    withDynFlags (setLogger logref . setDF) $ do
+    withDynFlags setDF $ do
         withCmdFlags wflags $ do
+            setLogger $ appendLogRef logref
             body
             liftIO $ Right <$> readAndClearLogRef opt logref
   where
-    setLogger logref df = df { log_action =  appendLogRef logref }
     wflags = filter ("-fno-warn" `isPrefixOf`) $ ghcOpts opt
 
 ----------------------------------------------------------------
@@ -72,18 +72,15 @@ sourceError opt err = do
     let ret = convert opt . errBagToStrList dflag style . srcErrorMessages $ err
     return (Left ret)
 
-errBagToStrList :: DynFlags -> PprStyle -> Bag ErrMsg -> [String]
-errBagToStrList dflag style = map (ppErrMsg dflag style) . reverse . bagToList
-
-----------------------------------------------------------------
-
-ppErrMsg :: DynFlags -> PprStyle -> ErrMsg -> String
-ppErrMsg dflag _style_fixme err = ppMsg spn SevError dflag msg -- ++ ext
-   where
-     spn = errMsgSpan err
-     msg = pprLocErrMsg err
-     -- fixme
---     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
+errBagToStrList :: DynFlags -> PprStyle -> ErrorMessages -> [String]
+errBagToStrList dflag style = map (ppErrMsg style) . reverse . bagToList
+  where
+    ppErrMsg _style_fixme err = ppMsg spn SevError dflag msg -- ++ ext
+       where
+         spn = errMsgSpan err
+         msg = pprLocErrMessage err
+         -- fixme
+    --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
 
 ppMsg :: SrcSpan -> Severity -> DynFlags -> SDoc -> String
 ppMsg spn sev dflag msg = prefix ++ cts

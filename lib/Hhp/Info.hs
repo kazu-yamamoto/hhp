@@ -7,9 +7,8 @@ module Hhp.Info (
   , types
   ) where
 
-import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, HsBind, HsExpr, Type, Located, Pat)
+import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, Type, LPat, LHsExpr)
 import qualified GHC as G
-import GHC.Core.Ppr.TyThing
 import GHC.Core.Type (mkVisFunTys)
 import GHC.Core.Utils (exprType)
 import GHC.Hs.Binds (HsBindLR(..))
@@ -29,6 +28,7 @@ import Data.Maybe (catMaybes, fromMaybe)
 import Data.Ord as O
 
 import Hhp.Doc (showPage, showOneLine, getStyle)
+import Hhp.Gap
 import Hhp.GHCApi
 import Hhp.Logger (getSrcSpan)
 import Hhp.Syb
@@ -57,7 +57,7 @@ info opt file expr = convert opt <$> handle handler body
     body = inModuleContext file $ \dflag style -> do
         sdoc <- infoThing expr
         return $ showPage dflag style sdoc
-    handler (SomeException _) = return "Cannot show info"
+    handler (SomeException _e) = return $ "Cannot show info: " ++ show _e
 
 ----------------------------------------------------------------
 
@@ -86,9 +86,9 @@ types opt file lineNo colNo = convert opt <$> handle handler body
         return $ map (toTup dflag style) $ sortBy (cmp `on` fst) srcSpanTypes
     handler (SomeException _) = return []
 
-type LExpression = Located (HsExpr GhcTc)
-type LBinding    = Located (HsBind GhcTc)
-type LPattern    = Located (Pat GhcTc)
+type LExpression = LHsExpr GhcTc
+type LBinding    = LHsBind GhcTc
+type LPattern    = LPat GhcTc
 
 getSrcSpanType :: ModSummary -> Int -> Int -> Ghc [(SrcSpan, Type)]
 getSrcSpanType modSum lineNo colNo = do
@@ -97,9 +97,9 @@ getSrcSpanType modSum lineNo colNo = do
     let es = listifySpans tcs (lineNo, colNo) :: [LExpression]
         bs = listifySpans tcs (lineNo, colNo) :: [LBinding]
         ps = listifySpans tcs (lineNo, colNo) :: [LPattern]
-    ets <- mapM (getType tcm) es
-    bts <- mapM (getType tcm) bs
-    pts <- mapM (getType tcm) ps
+    ets <- mapM (getTypeLExpression tcm) es
+    bts <- mapM (getTypeLBinding tcm) bs
+    pts <- mapM (getTypeLPattern tcm) ps
     return $ catMaybes $ concat [ets, bts, pts]
 
 cmp :: SrcSpan -> SrcSpan -> Ordering
@@ -155,22 +155,21 @@ withContext action = bracket setup teardown body
 
 ----------------------------------------------------------------
 
-class HasType a where
-    getType :: TypecheckedModule -> a -> Ghc (Maybe (SrcSpan, Type))
+getTypeLExpression :: TypecheckedModule -> LExpression -> Ghc (Maybe (SrcSpan, Type))
+getTypeLExpression _ e@(L spnA _) = do
+    hs_env <- G.getSession
+    (_, mbc) <- liftIO $ deSugarExpr hs_env e
+    let spn = locA spnA
+    return $ (spn, ) . exprType <$> mbc
 
-instance HasType LExpression where
-    getType _ e@(L spn _) = do
-        hs_env <- G.getSession
-        (_, mbe) <- liftIO $ deSugarExpr hs_env e
-        return $ (spn, ) . exprType <$> mbe
+getTypeLBinding :: TypecheckedModule -> LBinding -> Ghc (Maybe (SrcSpan, Type))
+getTypeLBinding _ (L spnA FunBind{fun_matches = m}) = return $ Just (spn, typ)
+  where
+    in_tys  = mg_arg_tys $ mg_ext m
+    out_typ = mg_res_ty  $ mg_ext m
+    typ = mkVisFunTys in_tys out_typ
+    spn = locA spnA
+getTypeLBinding _ _ = return Nothing
 
-instance HasType LBinding where
-    getType _ (L spn FunBind{fun_matches = m}) = return $ Just (spn, typ)
-      where
-        in_tys  = mg_arg_tys $ mg_ext m
-        out_typ = mg_res_ty  $ mg_ext m
-        typ = mkVisFunTys in_tys out_typ
-    getType _ _ = return Nothing
-
-instance HasType LPattern where
-    getType _ (L spn pat) = return $ Just (spn, hsPatType pat)
+getTypeLPattern :: TypecheckedModule -> LPattern -> Ghc (Maybe (SrcSpan, Type))
+getTypeLPattern _ (L spnA pat) = return $ Just (locA spnA, hsPatType pat)

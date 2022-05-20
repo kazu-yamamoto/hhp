@@ -57,6 +57,7 @@ Library
                         Hhp.Doc
                         Hhp.Find
                         Hhp.Flag
+                        Hhp.Gap
                         Hhp.GHCApi
                         Hhp.GhcPkg
                         Hhp.Logger
@@ -141,6 +142,7 @@ Test-Suite spec
                         Hhp.Doc
                         Hhp.Find
                         Hhp.Flag
+                        Hhp.Gap
                         Hhp.GHCApi
                         Hhp.GhcPkg
                         Hhp.Info

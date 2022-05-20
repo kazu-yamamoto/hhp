@@ -8,10 +8,10 @@ module Hhp.Find (
   , lookupSym
   ) where
 
-import GHC (Ghc, DynFlags(unitState), Module, ModuleInfo)
+import GHC (Ghc, DynFlags, Module, ModuleInfo)
 import qualified GHC as G
 import GHC.Unit.Info (UnitInfo, unitExposedModules, mkUnit)
-import GHC.Unit.State (listUnitInfo)
+import GHC.Unit.State (listUnitInfo, UnitState)
 import GHC.Utils.Outputable (ppr)
 
 import Control.DeepSeq (force)
@@ -22,6 +22,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 
 import Hhp.Doc (showOneLine, styleUnqualified)
+import Hhp.Gap
 import Hhp.GHCApi
 import Hhp.Types
 
@@ -55,7 +56,7 @@ lookupSym opt sym (SymMdlDb db) = convert opt $ fromMaybe [] (M.lookup sym db)
 -- | Browsing all functions in all system/user modules.
 browseAll :: DynFlags -> Ghc [(String,String)]
 browseAll dflag = do
-    let ms = packageModules dflag
+    ms <- packageModules <$> getUnitState
     is <- mapM G.getModuleInfo ms
     return $ concatMap (toNameModule dflag) (zip ms is)
 
@@ -67,8 +68,8 @@ toNameModule dflag (m,Just inf) = map (\name -> (toStr name, mdl)) names
     names = G.modInfoExports inf
     toStr = showOneLine dflag styleUnqualified . ppr
 
-packageModules :: DynFlags -> [Module]
-packageModules dflag = concatMap fromUnitInfo $ listUnitInfo $ unitState dflag
+packageModules :: UnitState -> [Module]
+packageModules us = concatMap fromUnitInfo $ listUnitInfo us
 
 fromUnitInfo :: UnitInfo -> [Module]
 fromUnitInfo uinfo = modules

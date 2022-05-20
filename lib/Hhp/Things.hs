@@ -10,14 +10,14 @@ import GHC.Core.ConLike (ConLike(..))
 import GHC.Core.FamInstEnv (pprFamInsts)
 import qualified GHC.Core.InstEnv as InstEnv
 import GHC.Core.PatSyn (PatSyn)
-import GHC.Core.Ppr.TyThing (pprTyThingInContextLoc)
-import GHC.Driver.Types (implicitTyThings)
 import GHC.Types.Name.Set (elemNameSet, mkNameSet)
 import GHC.Types.Var (varType)
 import GHC.Utils.Outputable as Outputable
 
 import Data.List (intersperse)
 import Data.Maybe (catMaybes)
+
+import Hhp.Gap
 
 ----------------------------------------------------------------
 

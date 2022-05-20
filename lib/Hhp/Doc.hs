@@ -6,13 +6,16 @@ module Hhp.Doc (
   ) where
 
 import GHC (Ghc, DynFlags, getPrintUnqual, pprCols)
-import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, initSDocContext, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle)
+import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle)
+import GHC.Driver.Session (initSDocContext)
 import GHC.Utils.Ppr (Mode(..), Style(..), renderStyle, style)
+
+import Hhp.Gap
 
 ----------------------------------------------------------------
 
 showPage :: DynFlags -> PprStyle -> SDoc -> String
-showPage = showSDocWithMode PageMode
+showPage = showSDocWithMode pagemode
 
 showOneLine :: DynFlags -> PprStyle -> SDoc -> String
 showOneLine = showSDocWithMode OneLineMode

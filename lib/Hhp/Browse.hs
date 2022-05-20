@@ -5,7 +5,6 @@ module Hhp.Browse (
 
 import GHC (Ghc, GhcException(CmdLineError), ModuleInfo, Name, TyThing, DynFlags, Type, TyCon)
 import qualified GHC as G
-import GHC.Core.Ppr.TyThing (pprTypeForUser)
 import GHC.Core.TyCon (isAlgTyCon)
 import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy, mkVisFunTy)
 import GHC.Data.FastString (mkFastString)
@@ -18,6 +17,7 @@ import Data.Maybe (catMaybes)
 
 import Hhp.Doc (showPage, styleUnqualified)
 import Hhp.GHCApi
+import Hhp.Gap
 import Hhp.Things
 import Hhp.Types
 

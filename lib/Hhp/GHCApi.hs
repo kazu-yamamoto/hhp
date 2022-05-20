@@ -17,10 +17,10 @@ module Hhp.GHCApi (
   , setWarnTypedHoles
   ) where
 
-import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
+import GHC (Ghc, DynFlags(..), LoadHowMuch(..))
 import qualified GHC as G
 import qualified GHC.Data.EnumSet as E (EnumSet, empty)
-import GHC.Driver.Session (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages),WarningFlag(Opt_WarnTypedHoles),gopt_set, xopt_set, wopt_set,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), WarningFlag)
+import GHC.Driver.Session (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages),WarningFlag(Opt_WarnTypedHoles),gopt_set, xopt_set, wopt_set,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), WarningFlag, parseDynamicFlagsCmdLine)
 import GHC.LanguageExtensions (Extension(..))
 import GHC.Utils.Monad (liftIO)
 
@@ -34,6 +34,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcess)
 
 import Hhp.CabalApi
+import Hhp.Gap
 import Hhp.GhcPkg
 import Hhp.Types
 
@@ -115,19 +116,7 @@ initSession build Options{} CompilerOptions{..} = do
       $ setEmptyLogger
       $ addPackageFlags depPackages df)
 
-setEmptyLogger :: DynFlags -> DynFlags
-setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ -> return () }
-
 ----------------------------------------------------------------
-
--- we don't want to generate object code so we compile to bytecode
--- (HscInterpreted) which implies LinkInMemory
--- HscInterpreted
-setLinkerOptions :: DynFlags -> DynFlags
-setLinkerOptions df = df {
-    ghcLink   = LinkInMemory
-  , hscTarget = HscInterpreted
-  }
 
 setIncludeDirs :: [IncludeDir] -> DynFlags -> DynFlags
 setIncludeDirs idirs df = df { importPaths = idirs }
@@ -150,7 +139,7 @@ setHideAllPackages _ df        = df
 -- | Parse command line ghc options and add them to the 'DynFlags' passed
 addCmdOpts :: [GHCOption] -> DynFlags -> Ghc DynFlags
 addCmdOpts cmdOpts df =
-    tfst <$> G.parseDynamicFlags df (map G.noLoc cmdOpts)
+    tfst <$> parseDynamicFlagsCmdLine df (map G.noLoc cmdOpts)
   where
     tfst (a,_,_) = a
 
