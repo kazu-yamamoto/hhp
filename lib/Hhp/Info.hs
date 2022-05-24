@@ -7,7 +7,7 @@ module Hhp.Info (
   , types
   ) where
 
-import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, LHsExpr, Type, Located, Pat)
+import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, HsBind, HsExpr, Type, Located, Pat)
 import qualified GHC as G
 import GHC.Core.Ppr.TyThing
 import GHC.Core.Type (mkVisFunTys)
@@ -86,8 +86,8 @@ types opt file lineNo colNo = convert opt <$> handle handler body
         return $ map (toTup dflag style) $ sortBy (cmp `on` fst) srcSpanTypes
     handler (SomeException _) = return []
 
-type LExpression = LHsExpr GhcTc
-type LBinding    = LHsBind GhcTc
+type LExpression = Located (HsExpr GhcTc)
+type LBinding    = Located (HsBind GhcTc)
 type LPattern    = Located (Pat GhcTc)
 
 getSrcSpanType :: ModSummary -> Int -> Int -> Ghc [(SrcSpan, Type)]
@@ -159,10 +159,10 @@ class HasType a where
     getType :: TypecheckedModule -> a -> Ghc (Maybe (SrcSpan, Type))
 
 instance HasType LExpression where
-    getType _ e = do
+    getType _ e@(L spn _) = do
         hs_env <- G.getSession
         mbe <- liftIO $ snd <$> deSugarExpr hs_env e
-        return $ (G.getLoc e, ) . exprType <$> mbe
+        return $ (spn, ) . exprType <$> mbe
 
 instance HasType LBinding where
     getType _ (L spn FunBind{fun_matches = m}) = return $ Just (spn, typ)
@@ -173,4 +173,4 @@ instance HasType LBinding where
     getType _ _ = return Nothing
 
 instance HasType LPattern where
-    getType _ (G.L spn pat) = return $ Just (spn, hsPatType pat)
+    getType _ (L spn pat) = return $ Just (spn, hsPatType pat)
