@@ -41,8 +41,8 @@ readAndClearLogRef opt (LogRef ref) = do
     writeIORef ref id
     return $! convert opt (b [])
 
-appendLogRef :: DynFlags -> LogRef -> LogAction
-appendLogRef df (LogRef ref) _ _ sev src msg = do
+appendLogRef :: LogRef -> LogAction
+appendLogRef (LogRef ref) df _ sev src msg = do
         let !l = ppMsg src sev df msg
         modifyIORef ref (\b -> b . (l:))
 
@@ -59,7 +59,7 @@ withLogger opt setDF body = handle (sourceError opt) $ do
             body
             liftIO $ Right <$> readAndClearLogRef opt logref
   where
-    setLogger logref df = df { log_action =  appendLogRef df logref }
+    setLogger logref df = df { log_action =  appendLogRef logref }
     wflags = filter ("-fno-warn" `isPrefixOf`) $ ghcOpts opt
 
 ----------------------------------------------------------------
