@@ -5,8 +5,8 @@ module Hhp.Check (
   , expand
   ) where
 
-import DynFlags (dopt_set, DumpFlag(Opt_D_dump_splices))
 import GHC (Ghc, DynFlags(..))
+import GHC.Driver.Session (dopt_set, DumpFlag(Opt_D_dump_splices))
 
 import Hhp.GHCApi
 import Hhp.Logger
@@ -36,7 +36,7 @@ checkSyntax opt cradle files = withGHC sessionName $ do
 check :: Options
       -> [FilePath]  -- ^ The target files.
       -> Ghc (Either String String)
-check opt fileNames = withLogger opt (setAllWaringFlags . setPartialSignatures . setDeferTypedHoles) $
+check opt fileNames = withLogger opt (setAllWarningFlags . setPartialSignatures . setDeferTypedHoles) $
     setTargetFiles fileNames
 
 ----------------------------------------------------------------
@@ -61,7 +61,7 @@ expandTemplate opt cradle files = withGHC sessionName $ do
 expand :: Options
       -> [FilePath]  -- ^ The target files.
       -> Ghc (Either String String)
-expand opt fileNames = withLogger opt (setDumpSplices . setNoWaringFlags) $
+expand opt fileNames = withLogger opt (setDumpSplices . setNoWarningFlags) $
     setTargetFiles fileNames
 
 setDumpSplices :: DynFlags -> DynFlags

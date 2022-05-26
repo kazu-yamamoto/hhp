@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE CPP #-}
 
 module Hhp.Logger (
     withLogger
@@ -7,26 +6,23 @@ module Hhp.Logger (
   , getSrcSpan
   ) where
 
-import Bag (Bag, bagToList)
-import CoreMonad (liftIO)
-import DynFlags (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
-import ErrUtils
-import Exception (ghandle)
-import FastString (unpackFS)
 import GHC (Ghc, DynFlags(..), SrcSpan(..))
-#if __GLASGOW_HASKELL__ < 808
-import GHC (Severity(SevError))
-#endif
 import qualified GHC as G
-import HscTypes (SourceError, srcErrorMessages)
-import Outputable (PprStyle, SDoc)
+import GHC.Data.Bag (bagToList)
+import GHC.Data.FastString (unpackFS)
+import GHC.Driver.Session (dopt, DumpFlag(Opt_D_dump_splices))
+import GHC.Utils.Error (Severity(..), errMsgSpan)
+import GHC.Utils.Monad (liftIO)
+import GHC.Utils.Outputable (PprStyle, SDoc, defaultDumpStyle)
 
+import Control.Monad.Catch (handle)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef, modifyIORef)
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
 import System.FilePath (normalise)
 
 import Hhp.Doc (showPage, getStyle)
+import Hhp.Gap
 import Hhp.GHCApi (withDynFlags, withCmdFlags)
 import Hhp.Types (Options(..), convert)
 
@@ -45,10 +41,10 @@ readAndClearLogRef opt (LogRef ref) = do
     writeIORef ref id
     return $! convert opt (b [])
 
-appendLogRef :: DynFlags -> LogRef -> LogAction
-appendLogRef df (LogRef ref) _ _ sev src style msg = do
-        let !l = ppMsg src sev df style msg
-        modifyIORef ref (\b -> b . (l:))
+appendLogRef :: LogRef -> LogAction
+appendLogRef (LogRef ref) df _mc sev src msg = do
+    let !l = ppMsg src sev df msg
+    modifyIORef ref (\b -> b . (l:))
 
 ----------------------------------------------------------------
 
@@ -56,14 +52,14 @@ appendLogRef df (LogRef ref) _ _ sev src style msg = do
 --   executes a body. Log messages are returned as 'String'.
 --   Right is success and Left is failure.
 withLogger :: Options -> (DynFlags -> DynFlags) -> Ghc () -> Ghc (Either String String)
-withLogger opt setDF body = ghandle (sourceError opt) $ do
+withLogger opt setDF body = handle (sourceError opt) $ do
     logref <- liftIO newLogRef
-    withDynFlags (setLogger logref . setDF) $ do
+    withDynFlags setDF $ do
         withCmdFlags wflags $ do
+            setLogger $ appendLogRef logref
             body
             liftIO $ Right <$> readAndClearLogRef opt logref
   where
-    setLogger logref df = df { log_action =  appendLogRef df logref }
     wflags = filter ("-fno-warn" `isPrefixOf`) $ ghcOpts opt
 
 ----------------------------------------------------------------
@@ -72,27 +68,24 @@ withLogger opt setDF body = ghandle (sourceError opt) $ do
 sourceError :: Options -> SourceError -> Ghc (Either String String)
 sourceError opt err = do
     dflag <- G.getSessionDynFlags
-    style <- getStyle dflag
+    style <- getStyle
     let ret = convert opt . errBagToStrList dflag style . srcErrorMessages $ err
     return (Left ret)
 
-errBagToStrList :: DynFlags -> PprStyle -> Bag ErrMsg -> [String]
-errBagToStrList dflag style = map (ppErrMsg dflag style) . reverse . bagToList
-
-----------------------------------------------------------------
-
-ppErrMsg :: DynFlags -> PprStyle -> ErrMsg -> String
-ppErrMsg dflag style err = ppMsg spn SevError dflag style msg -- ++ ext
-   where
-     spn = errMsgSpan err
-     msg = pprLocErrMsg err
-     -- fixme
---     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
-
-ppMsg :: SrcSpan -> Severity-> DynFlags -> PprStyle -> SDoc -> String
-ppMsg spn sev dflag style msg = prefix ++ cts
+errBagToStrList :: DynFlags -> PprStyle -> ErrorMessages -> [String]
+errBagToStrList dflag style = map (ppErrMsg style) . reverse . bagToList
   where
-    cts  = showPage dflag style msg
+    ppErrMsg _style_fixme err = ppMsg spn SevError dflag msg -- ++ ext
+       where
+         spn = errMsgSpan err
+         msg = pprLocErrMessage err
+         -- fixme
+    --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
+
+ppMsg :: SrcSpan -> Severity -> DynFlags -> SDoc -> String
+ppMsg spn sev dflag msg = prefix ++ cts
+  where
+    cts  = showPage dflag defaultDumpStyle msg
     defaultPrefix
       | isDumpSplices dflag = ""
       | otherwise           = checkErrorPrefix
@@ -110,15 +103,15 @@ showSeverityCaption SevWarning = "Warning: "
 showSeverityCaption _          = ""
 
 getSrcFile :: SrcSpan -> Maybe String
-getSrcFile (G.RealSrcSpan spn) = Just . unpackFS . G.srcSpanFile $ spn
-getSrcFile _                   = Nothing
+getSrcFile (G.RealSrcSpan spn _) = Just . unpackFS . G.srcSpanFile $ spn
+getSrcFile _                     = Nothing
 
 isDumpSplices :: DynFlags -> Bool
 isDumpSplices dflag = dopt Opt_D_dump_splices dflag
 
 getSrcSpan :: SrcSpan -> Maybe (Int,Int,Int,Int)
-getSrcSpan (RealSrcSpan spn) = Just ( G.srcSpanStartLine spn
-                                    , G.srcSpanStartCol spn
-                                    , G.srcSpanEndLine spn
-                                    , G.srcSpanEndCol spn)
+getSrcSpan (RealSrcSpan spn _) = Just ( G.srcSpanStartLine spn
+                                      , G.srcSpanStartCol spn
+                                      , G.srcSpanEndLine spn
+                                      , G.srcSpanEndCol spn)
 getSrcSpan _ = Nothing

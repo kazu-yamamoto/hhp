@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Hhp.CabalApi (
     getCompilerOptions
@@ -22,33 +23,19 @@ import Distribution.System (buildPlatform)
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
 import Distribution.Version (Version)
-
-#if MIN_VERSION_Cabal(3,2,0)
 import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 import Distribution.Types.Flag (mkFlagAssignment)
 import Distribution.Types.PackageName (unPackageName)
-#elif MIN_VERSION_Cabal(2,2,0)
-import Distribution.PackageDescription.Configuration (finalizePD)
-import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
-import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-import Distribution.Types.GenericPackageDescription (mkFlagAssignment)
-import Distribution.Types.PackageName (unPackageName)
-#elif MIN_VERSION_Cabal(2,0,0)
-import Distribution.PackageDescription.Configuration (finalizePD)
-import Distribution.PackageDescription.Parse (readPackageDescription)
-import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-import Distribution.Types.PackageName (unPackageName)
-#else
-import Distribution.Package (PackageName(PackageName))
-import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-import Distribution.PackageDescription.Parse (readPackageDescription)
+#if MIN_VERSION_Cabal(3,6,0)
+import Distribution.Utils.Path (getSymbolicPath, SymbolicPath)
 #endif
+
+import GHC.Utils.Monad (liftIO)
 
 import Control.Exception (throwIO)
 import Control.Monad (filterM)
-import CoreMonad (liftIO)
 import Data.Maybe (maybeToList, mapMaybe)
 import Data.Set (fromList, toList)
 import System.Directory (doesFileExist)
@@ -120,31 +107,16 @@ parseCabalFile :: FilePath -> IO PackageDescription
 parseCabalFile file = do
     cid <- getGHCId
     let cid' = unknownCompilerInfo cid NoAbiTag
-#if MIN_VERSION_Cabal(2,2,0)
     epgd <- readGenericPackageDescription silent file
-#else
-    epgd <- readPackageDescription silent file
-#endif
     case toPkgDesc cid' epgd of
         Left deps    -> throwIO $ userError $ show deps ++ " are not installed"
         Right (pd,_) -> if nullPkg pd
                         then throwIO $ userError $ file ++ " is broken"
                         else return pd
   where
-#if MIN_VERSION_Cabal(2,2,0)
     none = mkFlagAssignment []
-#else
-    none = []
-#endif
-#if MIN_VERSION_Cabal(2,0,0)
     nullPkg pd = unPackageName (C.pkgName (P.package pd)) == ""
     toPkgDesc cid = finalizePD none defaultComponentRequestedSpec (const True) buildPlatform cid []
-#else
-    nullPkg pd = name == ""
-      where
-        PackageName name = C.pkgName (P.package pd)
-    toPkgDesc cid = finalizePackageDescription none (const True) buildPlatform cid []
-#endif
 
 ----------------------------------------------------------------
 
@@ -177,18 +149,10 @@ cabalAllBuildInfo :: PackageDescription -> [BuildInfo]
 cabalAllBuildInfo pd = libBI ++ subBI ++ execBI ++ testBI ++ benchBI
   where
     libBI   = map P.libBuildInfo       $ maybeToList $ P.library pd
-#if MIN_VERSION_Cabal(2,0,0)
     subBI   = map P.libBuildInfo       $ P.subLibraries pd
-#else
-    subBI   = []
-#endif
     execBI  = map P.buildInfo          $ P.executables pd
     testBI  = map P.testBuildInfo      $ P.testSuites pd
-#if __GLASGOW_HASKELL__ >= 704
     benchBI = map P.benchmarkBuildInfo $ P.benchmarks pd
-#else
-    benchBI = []
-#endif
 
 ----------------------------------------------------------------
 
@@ -197,19 +161,13 @@ cabalDependPackages :: [BuildInfo] -> [PackageBaseName]
 cabalDependPackages bis = uniqueAndSort pkgs
   where
     pkgs = map getDependencyPackageName $ concatMap P.targetBuildDepends bis
-#if MIN_VERSION_Cabal(3,0,0)
     getDependencyPackageName (Dependency pkg _ _) = unPackageName pkg
-#elif MIN_VERSION_Cabal(2,0,0)
-    getDependencyPackageName (Dependency pkg _) = unPackageName pkg
-#else
-    getDependencyPackageName (Dependency (PackageName nm) _) = nm
-#endif
 
 ----------------------------------------------------------------
 
 -- | Extracting include directories for modules.
 cabalSourceDirs :: [BuildInfo] -> [IncludeDir]
-cabalSourceDirs bis = uniqueAndSort $ concatMap P.hsSourceDirs bis
+cabalSourceDirs bis = uniqueAndSort $ concatMap (map toPath . P.hsSourceDirs) bis
 
 ----------------------------------------------------------------
 
@@ -238,20 +196,10 @@ cabalAllTargets pd = do
     testTargets <- mapM getTestTarget $ P.testSuites pd
     return (libTargets,concat exeTargets,concat testTargets,benchTargets)
   where
-    lib = case P.library pd of
-            Nothing -> []
-#if MIN_VERSION_Cabal(2,0,0)
-            Just l -> P.explicitLibModules l
-#else
-            Just l -> P.libModules l
-#endif
+    lib = maybe [] P.explicitLibModules $ P.library pd
 
     libTargets = map toModuleString lib
-#if __GLASGOW_HASKELL__ >= 704
     benchTargets = map toModuleString $ concatMap P.benchmarkModules $ P.benchmarks  pd
-#else
-    benchTargets = []
-#endif
     toModuleString :: ModuleName -> String
     toModuleString mn = fromFilePath $ toFilePath mn
 
@@ -262,12 +210,20 @@ cabalAllTargets pd = do
     getTestTarget ts =
        case P.testInterface ts of
         (TestSuiteExeV10 _ filePath) -> do
-          let maybeTests = [p </> e | p <- P.hsSourceDirs $ P.testBuildInfo ts, e <- [filePath]]
+          let maybeTests = [toPath p </> e | p <- P.hsSourceDirs $ P.testBuildInfo ts, e <- [filePath]]
           liftIO $ filterM doesFileExist maybeTests
         (TestSuiteLibV09 _ moduleName) -> return [toModuleString moduleName]
         (TestSuiteUnsupported _)       -> return []
 
     getExecutableTarget :: Executable -> IO [String]
     getExecutableTarget exe = do
-      let maybeExes = [p </> e | p <- P.hsSourceDirs $ P.buildInfo exe, e <- [P.modulePath exe]]
+      let maybeExes = [toPath p </> e | p <- P.hsSourceDirs $ P.buildInfo exe, e <- [P.modulePath exe]]
       liftIO $ filterM doesFileExist maybeExes
+
+#if MIN_VERSION_Cabal(3,6,0)
+toPath :: SymbolicPath from to -> FilePath
+toPath = getSymbolicPath
+#else
+toPath :: String -> String
+toPath = id
+#endif

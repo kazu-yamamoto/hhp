@@ -1,5 +1,5 @@
 Name:                   hhp
-Version:                0.0.3
+Version:                1.0.0
 Author:                 Kazu Yamamoto <kazu@iij.ad.jp>
 Maintainer:             Kazu Yamamoto <kazu@iij.ad.jp>
 License:                BSD3
@@ -14,6 +14,8 @@ Description:            The hhp command is a backend command to enrich
                         the hhpi command,
                         the HHP library, and Emacs front-end.
                         For more information, please see its home page.
+                        Version 0.x.x supports GHC 8.x only whereas version
+                        1.x.x suports GHC 9.x only.
 
 Category:               Development
 Cabal-Version:          >= 1.10
@@ -57,8 +59,8 @@ Library
                         Hhp.Doc
                         Hhp.Find
                         Hhp.Flag
-                        Hhp.GHCApi
                         Hhp.Gap
+                        Hhp.GHCApi
                         Hhp.GhcPkg
                         Hhp.Logger
                         Hhp.Info
@@ -74,6 +76,7 @@ Library
                       , containers
                       , deepseq
                       , directory
+                      , exceptions
                       , filepath
                       , ghc
                       , hlint >= 1.8.61
@@ -117,12 +120,11 @@ Test-Suite doctest
 
 Test-Suite spec
   Default-Language:     Haskell2010
-  Main-Is:              Main.hs
+  Main-Is:              Spec.hs
   Hs-Source-Dirs:       test, lib
   GHC-Options:          -Wall
   Type:                 exitcode-stdio-1.0
   Other-Modules:        Dir
-                        Spec
                         BrowseSpec
                         CabalApiSpec
                         CheckSpec
@@ -142,8 +144,8 @@ Test-Suite spec
                         Hhp.Doc
                         Hhp.Find
                         Hhp.Flag
-                        Hhp.GHCApi
                         Hhp.Gap
+                        Hhp.GHCApi
                         Hhp.GhcPkg
                         Hhp.Info
                         Hhp.Lang
@@ -159,6 +161,7 @@ Test-Suite spec
                       , containers
                       , deepseq
                       , directory
+                      , exceptions
                       , extra
                       , filepath
                       , ghc
@@ -167,7 +170,7 @@ Test-Suite spec
                       , syb
                       , hlint >= 1.7.1
                       , ghc-boot
-  build-tool-depends: hspec-discover:hspec-discover
+  build-tool-depends: hspec-discover:hspec-discover == 2.*
 
 Source-Repository head
   Type:                 git

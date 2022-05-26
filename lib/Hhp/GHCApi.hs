@@ -9,26 +9,24 @@ module Hhp.GHCApi (
   , getSystemLibDir
   , withDynFlags
   , withCmdFlags
-  , setNoWaringFlags
-  , setAllWaringFlags
+  , setNoWarningFlags
+  , setAllWarningFlags
   , setDeferTypedHoles
   , setDeferTypeErrors
   , setPartialSignatures
   , setWarnTypedHoles
   ) where
 
-import CoreMonad (liftIO)
-import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages)
-                ,WarningFlag(Opt_WarnTypedHoles)
-                ,gopt_set, xopt_set, wopt_set
-                ,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..))
-import Exception (ghandle, SomeException(..))
-import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
+import GHC (Ghc, DynFlags(..), LoadHowMuch(..))
 import qualified GHC as G
+import qualified GHC.Data.EnumSet as E (EnumSet, empty)
+import GHC.Driver.Session (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages),WarningFlag(Opt_WarnTypedHoles),gopt_set, xopt_set, wopt_set,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), WarningFlag, parseDynamicFlagsCmdLine)
 import GHC.LanguageExtensions (Extension(..))
+import GHC.Utils.Monad (liftIO)
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
+import Control.Monad.Catch (SomeException, handle, bracket)
 import Data.Maybe (isJust, fromJust)
 import System.Exit (exitSuccess)
 import System.IO (hPutStr, hPrint, stderr)
@@ -36,7 +34,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcess)
 
 import Hhp.CabalApi
-import qualified Hhp.Gap as Gap
+import Hhp.Gap
 import Hhp.GhcPkg
 import Hhp.Types
 
@@ -56,7 +54,7 @@ getSystemLibDir = do
 withGHC :: FilePath  -- ^ A target file displayed in an error message.
         -> Ghc a -- ^ 'Ghc' actions created by the Ghc utilities.
         -> IO a
-withGHC file body = ghandle ignore $ withGHC' body
+withGHC file body = handle ignore $ withGHC' body
   where
     ignore :: SomeException -> IO a
     ignore e = do
@@ -111,26 +109,14 @@ initSession :: Build
             -> Ghc ()
 initSession build Options{} CompilerOptions{..} = do
     df <- G.getSessionDynFlags
-    void $ G.setSessionDynFlags =<< (addCmdOpts ghcOptions
-      $ setLinkerOptions
+    void $ G.setSessionDynFlags =<< addCmdOpts ghcOptions
+      ( setLinkerOptions
       $ setIncludeDirs includeDirs
       $ setBuildEnv build
       $ setEmptyLogger
       $ addPackageFlags depPackages df)
 
-setEmptyLogger :: DynFlags -> DynFlags
-setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ _ -> return () }
-
 ----------------------------------------------------------------
-
--- we don't want to generate object code so we compile to bytecode
--- (HscInterpreted) which implies LinkInMemory
--- HscInterpreted
-setLinkerOptions :: DynFlags -> DynFlags
-setLinkerOptions df = df {
-    ghcLink   = LinkInMemory
-  , hscTarget = HscInterpreted
-  }
 
 setIncludeDirs :: [IncludeDir] -> DynFlags -> DynFlags
 setIncludeDirs idirs df = df { importPaths = idirs }
@@ -153,7 +139,7 @@ setHideAllPackages _ df        = df
 -- | Parse command line ghc options and add them to the 'DynFlags' passed
 addCmdOpts :: [GHCOption] -> DynFlags -> Ghc DynFlags
 addCmdOpts cmdOpts df =
-    tfst <$> G.parseDynamicFlags df (map G.noLoc cmdOpts)
+    tfst <$> parseDynamicFlagsCmdLine df (map G.noLoc cmdOpts)
   where
     tfst (a,_,_) = a
 
@@ -175,7 +161,7 @@ getDynamicFlags = do
     G.runGhc mlibdir G.getSessionDynFlags
 
 withDynFlags :: (DynFlags -> DynFlags) -> Ghc a -> Ghc a
-withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
+withDynFlags setFlag body = bracket setup teardown (const body)
   where
     setup = do
         dflag <- G.getSessionDynFlags
@@ -184,7 +170,7 @@ withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
     teardown = void . G.setSessionDynFlags
 
 withCmdFlags :: [GHCOption] -> Ghc a -> Ghc a
-withCmdFlags flags body = G.gbracket setup teardown (\_ -> body)
+withCmdFlags flags body = bracket setup teardown (const body)
   where
     setup = do
         dflag <- G.getSessionDynFlags >>= addCmdOpts flags
@@ -211,15 +197,15 @@ setPartialSignatures :: DynFlags -> DynFlags
 setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWildCards
 
 -- | Set 'DynFlags' equivalent to "-w:".
-setNoWaringFlags :: DynFlags -> DynFlags
-setNoWaringFlags df = df { warningFlags = Gap.emptyWarnFlags}
+setNoWarningFlags :: DynFlags -> DynFlags
+setNoWarningFlags df = df { warningFlags = E.empty}
 
 -- | Set 'DynFlags' equivalent to "-Wall".
-setAllWaringFlags :: DynFlags -> DynFlags
-setAllWaringFlags df = df { warningFlags = allWarningFlags }
+setAllWarningFlags :: DynFlags -> DynFlags
+setAllWarningFlags df = df { warningFlags = allWarningFlags }
 
 {-# NOINLINE allWarningFlags #-}
-allWarningFlags :: Gap.WarnFlags
+allWarningFlags :: E.EnumSet WarningFlag
 allWarningFlags = unsafePerformIO $ do
     mlibdir <- getSystemLibDir
     G.runGhc mlibdir $ do

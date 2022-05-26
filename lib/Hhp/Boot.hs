@@ -1,7 +1,7 @@
 module Hhp.Boot where
 
-import CoreMonad (liftIO)
 import GHC (Ghc)
+import GHC.Utils.Monad (liftIO)
 
 import Hhp.Browse
 import Hhp.Flag

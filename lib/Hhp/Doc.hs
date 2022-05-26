@@ -1,24 +1,39 @@
-module Hhp.Doc where
+module Hhp.Doc (
+    showPage
+  , showOneLine
+  , getStyle
+  , styleUnqualified
+  ) where
 
 import GHC (Ghc, DynFlags, getPrintUnqual, pprCols)
-import Outputable (PprStyle, SDoc, withPprStyleDoc, neverQualify)
-import Pretty (Mode(..), Doc, Style(..), renderStyle, style)
+import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle)
+import GHC.Driver.Session (initSDocContext)
+import GHC.Utils.Ppr (Mode(..), Style(..), renderStyle, style)
 
-import Hhp.Gap (makeUserStyle)
+import Hhp.Gap
+
+----------------------------------------------------------------
 
 showPage :: DynFlags -> PprStyle -> SDoc -> String
-showPage dflag stl = showDocWith dflag PageMode . withPprStyleDoc dflag stl
+showPage = showSDocWithMode pagemode
 
 showOneLine :: DynFlags -> PprStyle -> SDoc -> String
-showOneLine dflag stl = showDocWith dflag OneLineMode . withPprStyleDoc dflag stl
+showOneLine = showSDocWithMode OneLineMode
 
-getStyle :: DynFlags -> Ghc PprStyle
-getStyle dflags = makeUserStyle dflags <$> getPrintUnqual
-
-styleUnqualified :: DynFlags -> PprStyle
-styleUnqualified dflags = makeUserStyle dflags neverQualify
-
-showDocWith :: DynFlags -> Mode -> Doc -> String
-showDocWith dflags md = renderStyle mstyle
+showSDocWithMode :: Mode -> DynFlags -> PprStyle -> SDoc -> String
+showSDocWithMode md dflags pprstyle sdoc = renderStyle style' doc
   where
-    mstyle = style { mode = md, lineLength = pprCols dflags }
+    ctx = initSDocContext dflags pprstyle
+    doc = runSDoc sdoc ctx
+    style' = style { mode = md, lineLength = pprCols dflags }
+
+----------------------------------------------------------------
+
+getStyle :: Ghc PprStyle
+getStyle = makeUserStyle <$> getPrintUnqual
+
+styleUnqualified :: PprStyle
+styleUnqualified = makeUserStyle neverQualify
+
+makeUserStyle :: PrintUnqualified -> PprStyle
+makeUserStyle pu = mkUserStyle pu AllTheWay

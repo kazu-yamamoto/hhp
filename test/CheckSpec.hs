@@ -22,7 +22,7 @@ spec = do
             withDirectory_ "test/data/check-test-subdir" $ do
                 cradle <- findCradleWithoutSandbox
                 res <- checkSyntax defaultOptions cradle ["test/Bar/Baz.hs"]
-                res `shouldSatisfy` (("test" </> "Foo.hs:3:1:Warning: Top-level binding with no type signature: foo :: [Char]\n") `isSuffixOf`)
+                res `shouldSatisfy` (("test" </> "Foo.hs:3:1:Warning: Top-level binding with no type signature: foo :: String\n") `isSuffixOf`)
 
         it "can detect mutually imported modules" $ do
             withDirectory_ "test/data" $ do

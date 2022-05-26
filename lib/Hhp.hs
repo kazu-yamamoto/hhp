@@ -30,6 +30,7 @@ module Hhp (
   , findSymbol
   -- * Misc
   , cProjectVersion
+  , cProjectVersionInt
   ) where
 
 import Hhp.Boot
@@ -46,4 +47,4 @@ import Hhp.List
 import Hhp.PkgDoc
 import Hhp.Types
 
-import Config (cProjectVersion)
+import GHC.Settings.Config (cProjectVersion, cProjectVersionInt)

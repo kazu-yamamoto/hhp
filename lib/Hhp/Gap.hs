@@ -1,198 +1,122 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, CPP #-}
+{-# LANGUAGE CPP #-}
 
 module Hhp.Gap (
-    WarnFlags
-  , emptyWarnFlags
-  , makeUserStyle
-  , getModuleName
-  , getTyThing
-  , fixInfo
-  , getModSummaries
-  , LExpression
-  , LBinding
-  , LPattern
-  , inTypes
-  , outType
-  , HsBindLR(..)
+#if __GLASGOW_HASKELL__ >= 902
+    module GHC.Types.TyThing.Ppr
+#else
+    module GHC.Core.Ppr.TyThing
+#endif
+  , implicitTyThings
+  , pagemode
+  , getUnitState
   , languagesAndExtensions
-  , mkFunTy
-  , mkFunTys
-  , getModSummaryForMain
+  , setEmptyLogger
+  , setLinkerOptions
+  , setLogger
+  , LogAction
+  , SourceError
+  , srcErrorMessages
+  , pprLocErrMessage
+  , ErrorMessages
+  , locA
+  , LOC
   ) where
 
-import Data.List (find)
+import GHC (Ghc, DynFlags(..), GhcLink(..))
+import qualified GHC as G
+import GHC.Utils.Ppr(Mode(..))
+import GHC.Unit.State (UnitState)
+import GHC.Driver.Session (supportedLanguagesAndExtensions)
+import GHC.Utils.Outputable (SDoc)
 
-import DynFlags (DynFlags, supportedLanguagesAndExtensions)
-import GHC(Ghc,getModuleGraph,moduleNameString,moduleName,ms_mod)
-
-import GHC (LHsBind, LHsExpr, Type)
-#if __GLASGOW_HASKELL__ >= 808
-import GHC (Located, Pat)
-#else
-import GHC (LPat)
-#endif
-#if __GLASGOW_HASKELL__ >= 810
-import GHC.Hs.Expr (MatchGroup)
-#else
-import HsExpr (MatchGroup)
-#endif
-import Outputable (PrintUnqualified, PprStyle, Depth(AllTheWay), mkUserStyle)
-
+#if __GLASGOW_HASKELL__ >= 902
 ----------------------------------------------------------------
-----------------------------------------------------------------
+import GHC (Backend(..), pushLogHookM)
+import GHC.Types.TyThing.Ppr
+import GHC.Types.TyThing (implicitTyThings)
+import GHC.Driver.Env (hsc_units)
+import GHC.Platform.Host (hostPlatformArchOS)
+import GHC.Utils.Logger (LogAction)
+import GHC.Utils.Error (ErrorMessages, pprLocMsgEnvelope, MsgEnvelope, DecoratedSDoc)
+import GHC.Types.SourceError (SourceError, srcErrorMessages)
+import GHC.Parser.Annotation (locA, LocatedA)
 
-#if __GLASGOW_HASKELL__ >= 802
-#else
-import GHC.PackageDb (ExposedModule(..))
-#endif
+pagemode :: Mode
+pagemode = PageMode True
 
-#if __GLASGOW_HASKELL__ >= 804
-import DynFlags (WarningFlag)
-import qualified EnumSet as E (EnumSet, empty)
-import GHC (mgModSummaries, ModSummary, ModuleGraph)
-#else
-import qualified Data.IntSet as I (IntSet, empty)
-import GHC (ModSummary)
-#endif
-
-#if __GLASGOW_HASKELL__ >= 810
-import GHC.Hs.Expr (MatchGroupTc(..))
-import GHC.Hs.Extension (GhcTc)
-import GHC (mg_ext)
-#elif __GLASGOW_HASKELL__ >= 806
-import HsExpr (MatchGroupTc(..))
-import HsExtension (GhcTc)
-import GHC (mg_ext)
-#elif __GLASGOW_HASKELL__ >= 804
-import HsExtension (GhcTc)
-import GHC (mg_res_ty, mg_arg_tys)
-#else
-import GHC (Id, mg_res_ty, mg_arg_tys)
-#endif
-
-#if __GLASGOW_HASKELL__ >= 810
-import GHC.Hs.Binds (HsBindLR(..))
-import GHC.Platform.Host
-import Type (mkVisFunTy, mkVisFunTys)
-#else
-import HsBinds (HsBindLR(..))
-import Type (mkFunTy, mkFunTys)
-#endif
-
-----------------------------------------------------------------
-----------------------------------------------------------------
-
-makeUserStyle :: DynFlags -> PrintUnqualified -> PprStyle
-#if __GLASGOW_HASKELL__ >= 802
-makeUserStyle dflags style = mkUserStyle dflags style AllTheWay
-#else
-makeUserStyle _      style = mkUserStyle        style AllTheWay
-#endif
-
-#if __GLASGOW_HASKELL__ >= 802
-getModuleName :: (a, b) -> a
-getModuleName = fst
-#else
-getModuleName :: ExposedModule unitid modulename -> modulename
-getModuleName = exposedName
-#endif
-
-----------------------------------------------------------------
-
-#if __GLASGOW_HASKELL__ >= 804
-type WarnFlags = E.EnumSet WarningFlag
-emptyWarnFlags :: WarnFlags
-emptyWarnFlags = E.empty
-#else
-type WarnFlags = I.IntSet
-emptyWarnFlags :: WarnFlags
-emptyWarnFlags = I.empty
-#endif
-
-#if __GLASGOW_HASKELL__ >= 804
-getModSummaries :: ModuleGraph -> [ModSummary]
-getModSummaries = mgModSummaries
-
-getTyThing :: (a, b, c, d, e) -> a
-getTyThing (t,_,_,_,_) = t
-
-fixInfo :: (a, b, c, d, e) -> (a, b, c, d)
-fixInfo (t,f,cs,fs,_) = (t,f,cs,fs)
-#else
-getModSummaries :: a -> a
-getModSummaries = id
-
-getTyThing :: (a, b, c, d) -> a
-getTyThing (t,_,_,_) = t
-
-fixInfo :: (a, b, c, d) -> (a, b, c, d)
-fixInfo = id
-#endif
-
-----------------------------------------------------------------
-
-#if __GLASGOW_HASKELL__ >= 808
-type LExpression = LHsExpr GhcTc
-type LBinding    = LHsBind GhcTc
-type LPattern    = Located (Pat GhcTc)
-
-inTypes :: MatchGroup GhcTc LExpression -> [Type]
-inTypes = mg_arg_tys . mg_ext
-outType :: MatchGroup GhcTc LExpression -> Type
-outType = mg_res_ty . mg_ext
-#elif __GLASGOW_HASKELL__ >= 806
-type LExpression = LHsExpr GhcTc
-type LBinding    = LHsBind GhcTc
-type LPattern    = LPat    GhcTc
-
-inTypes :: MatchGroup GhcTc LExpression -> [Type]
-inTypes = mg_arg_tys . mg_ext
-outType :: MatchGroup GhcTc LExpression -> Type
-outType = mg_res_ty . mg_ext
-#elif __GLASGOW_HASKELL__ >= 804
-type LExpression = LHsExpr GhcTc
-type LBinding    = LHsBind GhcTc
-type LPattern    = LPat    GhcTc
-
-inTypes :: MatchGroup GhcTc LExpression -> [Type]
-inTypes = mg_arg_tys
-outType :: MatchGroup GhcTc LExpression -> Type
-outType = mg_res_ty
-#else
-type LExpression = LHsExpr Id
-type LBinding    = LHsBind Id
-type LPattern    = LPat    Id
-
-inTypes :: MatchGroup Id LExpression -> [Type]
-inTypes = mg_arg_tys
-outType :: MatchGroup Id LExpression -> Type
-outType = mg_res_ty
-#endif
-
-----------------------------------------------------------------
+getUnitState :: Ghc UnitState
+getUnitState = hsc_units <$> G.getSession
 
 languagesAndExtensions :: [String]
-#if __GLASGOW_HASKELL__ >= 810
-languagesAndExtensions = supportedLanguagesAndExtensions cHostPlatformMini
-#else
-languagesAndExtensions = supportedLanguagesAndExtensions
-#endif
+languagesAndExtensions = supportedLanguagesAndExtensions hostPlatformArchOS
 
-#if __GLASGOW_HASKELL__ >= 810
-mkFunTy :: Type -> Type -> Type
-mkFunTy  = mkVisFunTy
+setEmptyLogger :: DynFlags -> DynFlags
+setEmptyLogger = id
 
-mkFunTys :: [Type] -> Type -> Type
-mkFunTys = mkVisFunTys
-#endif
+-- we don't want to generate object code so we compile to bytecode
+-- (HscInterpreted) which implies LinkInMemory
+-- HscInterpreted
+setLinkerOptions :: DynFlags -> DynFlags
+setLinkerOptions df = df {
+    ghcLink = LinkInMemory
+  , backend = Interpreter
+  }
 
+setLogger :: LogAction -> Ghc ()
+setLogger logaction = pushLogHookM (\__defaultLogAction -> logaction)
+
+pprLocErrMessage :: MsgEnvelope DecoratedSDoc -> SDoc
+pprLocErrMessage = pprLocMsgEnvelope
+
+type LOC = LocatedA
 ----------------------------------------------------------------
-
-getModSummaryForMain :: Ghc (Maybe ModSummary)
-#if __GLASGOW_HASKELL__ >= 804
-getModSummaryForMain = find isMain . mgModSummaries <$> getModuleGraph
 #else
-getModSummaryForMain = find isMain <$> getModuleGraph
+----------------------------------------------------------------
+import GHC (HscTarget(..), getSessionDynFlags, setSessionDynFlags, Located)
+import GHC.Core.Ppr.TyThing
+import GHC.Driver.Session (LogAction)
+import GHC.Driver.Types (implicitTyThings)
+import GHC.Platform.Host (cHostPlatformMini)
+import GHC.Driver.Types (SourceError, srcErrorMessages)
+import GHC.Utils.Error (ErrMsg, pprLocErrMsg)
+import GHC.Data.Bag (Bag)
+
+import Control.Monad (void)
+
+pagemode :: Mode
+pagemode = PageMode
+
+getUnitState :: Ghc UnitState
+getUnitState = G.unitState <$> G.getSessionDynFlags
+
+languagesAndExtensions :: [String]
+languagesAndExtensions = supportedLanguagesAndExtensions cHostPlatformMini
+
+setEmptyLogger :: DynFlags -> DynFlags
+setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ -> return () }
+
+-- we don't want to generate object code so we compile to bytecode
+-- (HscInterpreted) which implies LinkInMemory
+-- HscInterpreted
+setLinkerOptions :: DynFlags -> DynFlags
+setLinkerOptions df = df {
+    ghcLink = LinkInMemory
+  , hscTarget = HscInterpreted
+  }
+
+setLogger :: LogAction -> Ghc ()
+setLogger logaction = do
+    dflag <- getSessionDynFlags
+    void $ setSessionDynFlags dflag { log_action = logaction }
+
+pprLocErrMessage :: ErrMsg -> SDoc
+pprLocErrMessage = pprLocErrMsg
+
+type ErrorMessages = Bag ErrMsg
+
+locA :: a -> a
+locA = id
+
+type LOC = Located
+----------------------------------------------------------------
 #endif
-  where
-    isMain m = moduleNameString (moduleName (ms_mod m)) == "Main"

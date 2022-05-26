@@ -10,10 +10,9 @@ module Hhp.Find (
 
 import GHC (Ghc, DynFlags, Module, ModuleInfo)
 import qualified GHC as G
-import Module (Module(..))
-import Outputable (ppr)
-import PackageConfig (PackageConfig, exposedModules, packageConfigId)
-import Packages (listPackageConfigMap)
+import GHC.Unit.Info (UnitInfo, unitExposedModules, mkUnit)
+import GHC.Unit.State (listUnitInfo, UnitState)
+import GHC.Utils.Outputable (ppr)
 
 import Control.DeepSeq (force)
 import Data.Function (on)
@@ -23,8 +22,8 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 
 import Hhp.Doc (showOneLine, styleUnqualified)
+import Hhp.Gap
 import Hhp.GHCApi
-import Hhp.Gap (getModuleName)
 import Hhp.Types
 
 -- | Type of key for `SymMdlDb`.
@@ -57,7 +56,7 @@ lookupSym opt sym (SymMdlDb db) = convert opt $ fromMaybe [] (M.lookup sym db)
 -- | Browsing all functions in all system/user modules.
 browseAll :: DynFlags -> Ghc [(String,String)]
 browseAll dflag = do
-    let ms = packageModules dflag
+    ms <- packageModules <$> getUnitState
     is <- mapM G.getModuleInfo ms
     return $ concatMap (toNameModule dflag) (zip ms is)
 
@@ -67,14 +66,14 @@ toNameModule dflag (m,Just inf) = map (\name -> (toStr name, mdl)) names
   where
     mdl = G.moduleNameString (G.moduleName m)
     names = G.modInfoExports inf
-    toStr = showOneLine dflag (styleUnqualified dflag) . ppr
+    toStr = showOneLine dflag styleUnqualified . ppr
 
-packageModules :: DynFlags -> [Module]
-packageModules dflag = concatMap fromPackageConfig $ listPackageConfigMap dflag
+packageModules :: UnitState -> [Module]
+packageModules us = concatMap fromUnitInfo $ listUnitInfo us
 
-fromPackageConfig :: PackageConfig -> [Module]
-fromPackageConfig pkgcnf = modules
+fromUnitInfo :: UnitInfo -> [Module]
+fromUnitInfo uinfo = modules
   where
-    uid = packageConfigId pkgcnf -- check me
-    moduleNames = map getModuleName $ exposedModules pkgcnf
-    modules = map (Module uid) moduleNames
+    uid = mkUnit uinfo
+    moduleNames = map fst $ unitExposedModules uinfo
+    modules = map (G.mkModule uid) moduleNames

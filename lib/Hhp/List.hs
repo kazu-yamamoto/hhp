@@ -1,14 +1,16 @@
 module Hhp.List (listModules, modules) where
 
-import DynFlags (DynFlags)
 import GHC (Ghc)
 import qualified GHC as G
-import Module (moduleNameString, moduleName)
-import Packages (lookupModuleInAllPackages, listVisibleModuleNames)
 
-import Control.Exception (SomeException(..))
+import GHC.Unit.Module.Name (moduleNameString)
+import GHC.Unit.State (lookupModuleInAllUnits, listVisibleModuleNames)
+import GHC.Unit.Types (moduleName)
+
+import Control.Monad.Catch (SomeException(..), catch)
 import Data.List (nub, sort)
 
+import Hhp.Gap
 import Hhp.GHCApi
 import Hhp.Types
 
@@ -22,16 +24,15 @@ listModules opt cradle = withGHC' $ do
 
 -- | Listing installed modules.
 modules :: Options -> Ghc String
-modules opt = convert opt . arrange <$> (getModules `G.gcatch` handler)
+modules opt = convert opt . arrange <$> (getModules `catch` handler)
   where
-    getModules = listVisibleModules <$> G.getSessionDynFlags
     arrange = nub . sort . map (moduleNameString . moduleName)
     handler (SomeException _) = return []
 
 ----------------------------------------------------------------
 
-listVisibleModules :: DynFlags -> [G.Module]
-listVisibleModules df = mods
-  where
-    modNames = listVisibleModuleNames df
-    mods = [ m | mn <- modNames, (m, _) <- lookupModuleInAllPackages df mn ]
+getModules :: Ghc [G.Module]
+getModules = do
+    us <- getUnitState
+    let modNames = listVisibleModuleNames us
+    return [ m | mn <- modNames, (m, _) <- lookupModuleInAllUnits us mn ]
