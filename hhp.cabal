@@ -14,6 +14,8 @@ Description:            The hhp command is a backend command to enrich
                         the hhpi command,
                         the HHP library, and Emacs front-end.
                         For more information, please see its home page.
+                        Version 0.x.x supports GHC 8.x only whereas version
+                        1.x.x suports GHC 9.x only.
 
 Category:               Development
 Cabal-Version:          >= 1.10
