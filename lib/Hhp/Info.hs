@@ -121,7 +121,7 @@ pretty dflag style = showOneLine dflag style . pprTypeForUser
 
 inModuleContext :: FilePath -> (DynFlags -> PprStyle -> Ghc a) -> Ghc a
 inModuleContext file action =
-    withDynFlags (setWarnTypedHoles . setDeferTypeErrors . setNoWaringFlags) $ do
+    withDynFlags (setWarnTypedHoles . setDeferTypeErrors . setNoWarningFlags) $ do
     setTargetFiles [file]
     withContext $ do
         dflag <- G.getSessionDynFlags

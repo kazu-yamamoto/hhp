@@ -9,8 +9,8 @@ module Hhp.GHCApi (
   , getSystemLibDir
   , withDynFlags
   , withCmdFlags
-  , setNoWaringFlags
-  , setAllWaringFlags
+  , setNoWarningFlags
+  , setAllWarningFlags
   , setDeferTypedHoles
   , setDeferTypeErrors
   , setPartialSignatures
@@ -208,12 +208,12 @@ setPartialSignatures :: DynFlags -> DynFlags
 setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWildCards
 
 -- | Set 'DynFlags' equivalent to "-w:".
-setNoWaringFlags :: DynFlags -> DynFlags
-setNoWaringFlags df = df { warningFlags = E.empty}
+setNoWarningFlags :: DynFlags -> DynFlags
+setNoWarningFlags df = df { warningFlags = E.empty}
 
 -- | Set 'DynFlags' equivalent to "-Wall".
-setAllWaringFlags :: DynFlags -> DynFlags
-setAllWaringFlags df = df { warningFlags = allWarningFlags }
+setAllWarningFlags :: DynFlags -> DynFlags
+setAllWarningFlags df = df { warningFlags = allWarningFlags }
 
 {-# NOINLINE allWarningFlags #-}
 allWarningFlags :: E.EnumSet WarningFlag

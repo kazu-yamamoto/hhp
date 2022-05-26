@@ -22,8 +22,8 @@ module Hhp.Internal (
   , setTargetFiles
   -- * Logging
   , withLogger
-  , setNoWaringFlags
-  , setAllWaringFlags
+  , setNoWarningFlags
+  , setAllWarningFlags
   ) where
 
 import Hhp.CabalApi
