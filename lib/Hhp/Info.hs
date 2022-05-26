@@ -161,7 +161,7 @@ class HasType a where
 instance HasType LExpression where
     getType _ e@(L spn _) = do
         hs_env <- G.getSession
-        mbe <- liftIO $ snd <$> deSugarExpr hs_env e
+        (_, mbe) <- liftIO $ deSugarExpr hs_env e
         return $ (spn, ) . exprType <$> mbe
 
 instance HasType LBinding where
