@@ -116,7 +116,7 @@ showThing' _     (GtT t) = unwords . toList <$> tyType t
 showThing' _     _       = Nothing
 
 formatType :: DynFlags -> Type -> String
-formatType dflag a = showOutputable dflag (removeForAlls a)
+formatType dflag a = showOutputable dflag $ removeForAlls a
 
 showOutputable :: DynFlags -> Type -> String
 showOutputable dflag = unwords . lines . showPage dflag styleUnqualified . pprTypeForUser

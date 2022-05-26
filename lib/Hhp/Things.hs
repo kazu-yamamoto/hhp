@@ -7,6 +7,7 @@ module Hhp.Things (
 import GHC (Type, TyCon, Ghc, Fixity, TyThing)
 import qualified GHC as G
 import GHC.Core.ConLike (ConLike(..))
+import GHC.Core.DataCon (dataConNonlinearType)
 import GHC.Core.FamInstEnv (pprFamInsts)
 import qualified GHC.Core.InstEnv as InstEnv
 import GHC.Core.PatSyn (PatSyn)
@@ -28,7 +29,7 @@ data GapThing = GtA Type
 
 fromTyThing :: TyThing -> GapThing
 fromTyThing (G.AnId i)                   = GtA $ varType i
-fromTyThing (G.AConLike (RealDataCon d)) = GtA $ G.dataConWrapperType d
+fromTyThing (G.AConLike (RealDataCon d)) = GtA $ dataConNonlinearType d
 fromTyThing (G.AConLike (PatSynCon p))   = GtPatSyn p
 fromTyThing (G.ATyCon t)                 = GtT t
 fromTyThing _                            = GtN
