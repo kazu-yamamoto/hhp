@@ -15,11 +15,12 @@ import GHC.Unit.State (listUnitInfo, UnitState)
 import GHC.Utils.Outputable (ppr)
 
 import Control.DeepSeq (force)
+import Control.Monad.Catch (SomeException(..), catch)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, catMaybes)
 
 import Hhp.Doc (showOneLine, styleUnqualified)
 import Hhp.Gap
@@ -57,8 +58,12 @@ lookupSym opt sym (SymMdlDb db) = convert opt $ fromMaybe [] (M.lookup sym db)
 browseAll :: DynFlags -> Ghc [(String,String)]
 browseAll dflag = do
     ms <- packageModules <$> getUnitState
-    is <- mapM G.getModuleInfo ms
+    is <- catMaybes <$> mapM getMaybeModuleInfo ms
     return $ concatMap (toNameModule dflag) (zip ms is)
+
+-- ghc-bignum causes errors, sigh.
+getMaybeModuleInfo :: Module -> Ghc (Maybe (Maybe ModuleInfo))
+getMaybeModuleInfo x = Just <$> G.getModuleInfo x `catch` (\(SomeException _) -> return Nothing)
 
 toNameModule :: DynFlags -> (Module, Maybe ModuleInfo) -> [(String,String)]
 toNameModule _     (_,Nothing)  = []
