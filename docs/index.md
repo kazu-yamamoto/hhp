@@ -16,6 +16,13 @@ Emacs front-end is an extension of [Haskell mode](https://github.com/haskell/has
 
 ## Supported GHC and Cabal
 
+Version 1.x.x supports:
+
+- GHC 9.0 - Cabal 3.4
+- GHC 9.2 - Cabal 3.6
+
+Version 0.x.x supports:
+
 - GHC 8.0 - Cabal 1.24
 - GHC 8.2 - Cabal 2.0
 - GHC 8.4 - Cabal 2.2
