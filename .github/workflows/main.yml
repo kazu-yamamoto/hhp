@@ -14,14 +14,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc: ['9.0', '9.2']
-        cabal: ['3.4', '3.6']
     steps:
     - uses: actions/checkout@v3
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       with:
-        ghc-version:   ${{ matrix.ghc }}
-        cabal-version: ${{ matrix.cabal }}
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: 'latest'
     - name: Update cabal package database
       run: |
         cabal update
