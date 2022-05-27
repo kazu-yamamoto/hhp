@@ -3,21 +3,9 @@
 module CabalApiSpec where
 
 import Control.Exception
-import Data.Maybe
-import System.Directory
-import System.FilePath
 import Test.Hspec
 
-import Hhp (cProjectVersionInt)
 import Hhp.CabalApi
-import Hhp.Cradle
-import Hhp.Types
-
-import Dir
-
-ghcVersion :: Int
-ghcVersion = read cProjectVersionInt
-
 
 spec :: Spec
 spec = do
@@ -25,23 +13,22 @@ spec = do
         it "throws an exception if the cabal file is broken" $ do
             parseCabalFile "test/data/broken-cabal/broken.cabal" `shouldThrow` (\(_::IOException) -> True)
 
+{- For success, "test/data/cabal.sandbox.config" must contain absolute paths.
     describe "getCompilerOptions" $ do
         it "gets necessary CompilerOptions" $ do
-            cwd <- getCurrentDirectory
             withDirectory "test/data/subdir1/subdir2" $ \dir -> do
                 cradle <- findCradle
                 pkgDesc <- parseCabalFile $ fromJust $ cradleCabalFile cradle
+                print cradle
                 res <- getCompilerOptions [] cradle pkgDesc
                 let res' = res {
                         ghcOptions  = ghcOptions res
                       , includeDirs = map (toRelativeDir dir) (includeDirs res)
                       }
-                if ghcVersion < 706
-                  then ghcOptions res' `shouldBe` ["-global-package-conf", "-no-user-package-conf","-package-conf",cwd </> "test/data/.cabal-sandbox/i386-osx-ghc-7.6.3-packages.conf.d","-XHaskell98"]
-                  else ghcOptions res' `shouldBe` ["-global-package-db", "-no-user-package-db","-package-db",cwd </> "test/data/.cabal-sandbox/i386-osx-ghc-7.6.3-packages.conf.d","-XHaskell98"]
+                ghcOptions res' `shouldBe` ["-global-package-db", "-no-user-package-db","-package-db","test/data/.cabal-sandbox/i386-osx-ghc-7.6.3-packages.conf.d","-XHaskell98"]
                 includeDirs res' `shouldBe` ["test/data","test/data/dist/build","test/data/dist/build/autogen","test/data/subdir1/subdir2","test/data/test"]
                 depPackages res' `shouldSatisfy` (("Cabal", "1.18.1.3", "2b161c6bf77657aa17e1681d83cb051b")`elem`)
-
+-}
 
     describe "cabalDependPackages" $ do
         it "extracts dependent packages" $ do
