@@ -26,7 +26,7 @@ import Distribution.Version (Version)
 import Distribution.PackageDescription.Configuration (finalizePD)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-import Distribution.Types.Flag (mkFlagAssignment)
+import Distribution.Types.Flag (mkFlagAssignment, mkFlagName)
 import Distribution.Types.PackageName (unPackageName)
 #if MIN_VERSION_Cabal(3,6,0)
 import Distribution.Utils.Path (getSymbolicPath, SymbolicPath)
@@ -39,6 +39,7 @@ import Control.Monad (filterM)
 import Data.Maybe (maybeToList, mapMaybe)
 import Data.Set (fromList, toList)
 import System.Directory (doesFileExist)
+import System.Environment (lookupEnv)
 import System.FilePath (dropExtension, takeFileName, (</>))
 
 import Hhp.Types
@@ -108,15 +109,22 @@ parseCabalFile file = do
     cid <- getGHCId
     let cid' = unknownCompilerInfo cid NoAbiTag
     epgd <- readGenericPackageDescription silent file
-    case toPkgDesc cid' epgd of
+    flags <- getFlags
+    case toPkgDesc cid' flags epgd of
         Left deps    -> throwIO $ userError $ show deps ++ " are not installed"
         Right (pd,_) -> if nullPkg pd
                         then throwIO $ userError $ file ++ " is broken"
                         else return pd
   where
-    none = mkFlagAssignment []
+    envFlags = do
+      let parseF []      = []
+          parseF ccs@(c:cs)
+            | c == '-'   = [(mkFlagName cs, False)]
+            | otherwise  = [(mkFlagName ccs, True)]
+      maybe [] (concatMap parseF . words) `fmap` lookupEnv "HHP_CABAL_FLAGS"
+    getFlags = mkFlagAssignment <$> envFlags
     nullPkg pd = unPackageName (C.pkgName (P.package pd)) == ""
-    toPkgDesc cid = finalizePD none defaultComponentRequestedSpec (const True) buildPlatform cid []
+    toPkgDesc cid flags = finalizePD flags defaultComponentRequestedSpec (const True) buildPlatform cid []
 
 ----------------------------------------------------------------
 

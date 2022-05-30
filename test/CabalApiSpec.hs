@@ -3,6 +3,7 @@
 module CabalApiSpec where
 
 import Control.Exception
+import System.Environment (unsetEnv, setEnv)
 import Test.Hspec
 
 import Hhp.CabalApi
@@ -47,6 +48,20 @@ spec = do
         it "dependent packages with sublib" $ do
             pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-sublib/check-sublib.cabal"
             pkgs `shouldBe` ["array", "base", "bytestring"]
+
+    describe "HHP_CABAL_FLAGS" $ do
+        it "dependent packages without flags" $ do
+            unsetEnv "HHP_CABAL_FLAGS"
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs `shouldBe` ["base", "directory"]
+        it "dependent packages with foo flag" $ do
+            setEnv "HHP_CABAL_FLAGS" "foo"
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs `shouldBe` ["base", "directory", "filepath"]
+        it "dependent packages with foo and -bar flag" $ do
+            setEnv "HHP_CABAL_FLAGS" "foo -bar"
+            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs `shouldBe` ["base", "filepath"]
 
 {-
     describe "cabalAllBuildInfo" $ do
