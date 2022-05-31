@@ -24,7 +24,7 @@ Data-Dir:               elisp
 Data-Files:             Makefile hhp.el hhp-func.el hhp-doc.el hhp-comp.el
                         hhp-check.el hhp-process.el hhp-command.el hhp-info.el
                         hhp-ins-mod.el hhp-indent.el hhp-pkg.el
-Extra-Source-Files:     ChangeLog
+Extra-Source-Files:     ChangeLog.md
                         test/data/*.cabal
                         test/data/*.hs
                         test/data/cabal.sandbox.config.in
