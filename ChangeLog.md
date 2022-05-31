@@ -9,7 +9,7 @@
 - Injecting cabal flags via environment variable. [#13](https://github.com/kazu-yamamoto/hhp/pull/13)
 - Update to handle sub-libraries in .cabal file. [#14](https://github.com/kazu-yamamoto/hhp/pull/14)
 
-## 2022-07-21 v0.0.3
+## 2020-07-21 v0.0.3
 
 - fixing test due to hlint change.
 - supporting GHC 8.10
