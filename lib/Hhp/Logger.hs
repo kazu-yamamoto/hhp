@@ -42,7 +42,7 @@ readAndClearLogRef opt (LogRef ref) = do
     return $! convert opt (b [])
 
 appendLogRef :: LogRef -> LogAction
-appendLogRef (LogRef ref) df _mc sev src msg = do
+appendLogRef (LogRef ref) df _wr sev src msg = do
     let !l = ppMsg src sev df msg
     modifyIORef ref (\b -> b . (l:))
 
