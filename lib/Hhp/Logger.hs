@@ -10,6 +10,7 @@ import GHC (Ghc, DynFlags(..), SrcSpan(..))
 import qualified GHC as G
 import GHC.Data.Bag (bagToList)
 import GHC.Data.FastString (unpackFS)
+import GHC.Driver.Flags (WarnReason)
 import GHC.Driver.Session (dopt, DumpFlag(Opt_D_dump_splices))
 import GHC.Utils.Error (Severity(..), errMsgSpan)
 import GHC.Utils.Monad (liftIO)
@@ -28,22 +29,24 @@ import Hhp.Types (Options(..), convert)
 
 ----------------------------------------------------------------
 
-type Builder = [String] -> [String]
+type LogInfo = (DynFlags,WarnReason,Severity,SrcSpan,SDoc)
 
-newtype LogRef = LogRef (IORef Builder)
+newtype LogRef = LogRef (IORef ([LogInfo] -> [LogInfo]))
 
 newLogRef :: IO LogRef
 newLogRef = LogRef <$> newIORef id
 
 readAndClearLogRef :: Options -> LogRef -> IO String
 readAndClearLogRef opt (LogRef ref) = do
-    b <- readIORef ref
+    build <- readIORef ref
     writeIORef ref id
-    return $! convert opt (b [])
+    let logInfos = build []
+        logmsg = concat $ map ppMsg logInfos
+    return $! convert opt logmsg
 
 appendLogRef :: LogRef -> LogAction
-appendLogRef (LogRef ref) df _wr sev src msg = do
-    let !l = ppMsg src sev df msg
+appendLogRef (LogRef ref) df wr sev src msg = do
+    let !l = (df, wr, sev, src, msg)
     modifyIORef ref (\b -> b . (l:))
 
 ----------------------------------------------------------------
@@ -75,15 +78,15 @@ sourceError opt err = do
 errBagToStrList :: DynFlags -> PprStyle -> ErrorMessages -> [String]
 errBagToStrList dflag style = map (ppErrMsg style) . reverse . bagToList
   where
-    ppErrMsg _style_fixme err = ppMsg spn SevError dflag msg -- ++ ext
+    ppErrMsg _style_fixme err = ppMsg (dflag,undefined,SevError,spn, msg) -- ++ ext
        where
          spn = errMsgSpan err
          msg = pprLocErrMessage err
          -- fixme
     --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
 
-ppMsg :: SrcSpan -> Severity -> DynFlags -> SDoc -> String
-ppMsg spn sev dflag msg
+ppMsg :: LogInfo -> String
+ppMsg (dflag,_,sev,spn,msg)
   | isDumpSplices dflag = cts
   | otherwise           = prefix ++ cts
   where
