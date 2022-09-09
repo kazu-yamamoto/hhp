@@ -99,6 +99,7 @@ checkErrorPrefix :: String
 checkErrorPrefix = "Dummy:0:0:Error:"
 
 showSeverityCaption :: Severity -> String
+-- showSeverityCaption SevError is not necessary for historical reasons
 showSeverityCaption SevWarning = "Warning: "
 showSeverityCaption _          = ""
 
