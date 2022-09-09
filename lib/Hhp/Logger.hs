@@ -83,13 +83,12 @@ errBagToStrList dflag style = map (ppErrMsg style) . reverse . bagToList
     --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
 
 ppMsg :: SrcSpan -> Severity -> DynFlags -> SDoc -> String
-ppMsg spn sev dflag msg = prefix ++ cts
+ppMsg spn sev dflag msg
+  | isDumpSplices dflag = cts
+  | otherwise           = prefix ++ cts
   where
-    cts  = showPage dflag defaultDumpStyle msg
-    defaultPrefix
-      | isDumpSplices dflag = ""
-      | otherwise           = checkErrorPrefix
-    prefix = fromMaybe defaultPrefix $ do
+    cts = showPage dflag defaultDumpStyle msg
+    prefix = fromMaybe checkErrorPrefix $ do
         (line,col,_,_) <- getSrcSpan spn
         file <- normalise <$> getSrcFile spn
         let severityCaption = showSeverityCaption sev
