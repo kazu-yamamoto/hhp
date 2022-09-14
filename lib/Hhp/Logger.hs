@@ -49,7 +49,7 @@ readAndClearLogRef opt (LogRef ref) = do
     build <- readIORef ref
     writeIORef ref id
     let logInfos = build []
-        logmsg = concat $ map ppMsg logInfos
+        logmsg = map ppMsg logInfos
     return $! convert opt logmsg
 
 appendLogRef :: LogRef -> LogAction
