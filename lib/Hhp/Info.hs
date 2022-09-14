@@ -133,8 +133,10 @@ inModuleContext file action =
 fileModSummary :: FilePath -> Ghc ModSummary
 fileModSummary file = do
     mss <- mgModSummaries <$> G.getModuleGraph
-    let [ms] = filter (\m -> G.ml_hs_file (G.ms_location m) == Just file) mss
-    return ms
+    let xs = filter (\m -> G.ml_hs_file (G.ms_location m) == Just file) mss
+    case xs of
+      [ms] -> return ms
+      _    -> error "fileModSummary"
 
 withContext :: Ghc a -> Ghc a
 withContext action = bracket setup teardown body

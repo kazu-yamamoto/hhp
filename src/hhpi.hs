@@ -214,7 +214,9 @@ showInfo :: Options
          -> FilePath
          -> Ghc (String, Bool, Set FilePath)
 showInfo opt set fileArg = do
-    let [file, expr] = words fileArg
+    let (file, expr) = case words fileArg of
+          [file0, expr0] -> (file0, expr0)
+          _              -> error "showInfo"
     set' <- newFileSet set file
     ret <- info opt file expr
     return (ret, True, set')
@@ -224,7 +226,9 @@ showType :: Options
          -> FilePath
          -> Ghc (String, Bool, Set FilePath)
 showType opt set fileArg  = do
-    let [file, line, column] = words fileArg
+    let (file, line, column) = case words fileArg of
+          [file0, line0, column0] -> (file0, line0, column0)
+          _                       -> error "showInfo"
     set' <- newFileSet set file
     ret <- types opt file (read line) (read column)
     return (ret, True, set')

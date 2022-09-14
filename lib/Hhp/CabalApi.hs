@@ -40,7 +40,7 @@ import GHC.Utils.Monad (liftIO)
 
 import Control.Exception (throwIO)
 import Control.Monad (filterM)
-import Data.Maybe (maybeToList, mapMaybe)
+import Data.Maybe (maybeToList, mapMaybe, fromMaybe)
 import Data.Set (fromList, toList)
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv)
@@ -63,7 +63,7 @@ getCompilerOptions ghcopts cradle pkgDesc = do
   where
     wdir       = cradleCurrentDir cradle
     rdir       = cradleRootDir    cradle
-    Just cfile = cradleCabalFile  cradle
+    cfile      = fromMaybe "error getCompilerOptions" $ cradleCabalFile cradle
     thisPkg    = dropExtension $ takeFileName cfile
     buildInfos = cabalAllBuildInfo pkgDesc
     idirs      = includeDirectories rdir wdir $ cabalSourceDirs buildInfos
