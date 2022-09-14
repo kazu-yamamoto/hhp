@@ -28,7 +28,7 @@ spec = do
             withDirectory_ "test/data" $ do
                 cradle <- findCradleWithoutSandbox
                 res <- checkSyntax defaultOptions cradle ["Mutual1.hs"]
-                res `shouldSatisfy` ("Module imports form a cycle" `isInfixOf`)
+                res `shouldSatisfy` ("a cycle" `isInfixOf`)
 
         it "can check a module using QuasiQuotes" $ do
             withDirectory_ "test/data" $ do

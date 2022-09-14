@@ -5,25 +5,23 @@ module Hhp.Doc (
   , styleUnqualified
   ) where
 
-import GHC (Ghc, DynFlags, getPrintUnqual)
-import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle, sdocLineLength)
-import GHC.Driver.Session (initSDocContext)
+import GHC (Ghc, getPrintUnqual)
+import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle, sdocLineLength, SDocContext)
 import GHC.Utils.Ppr (Mode(..), Style(..), renderStyle, style)
 
 import Hhp.Gap
 
 ----------------------------------------------------------------
 
-showPage :: DynFlags -> PprStyle -> SDoc -> String
+showPage :: SDocContext -> SDoc -> String
 showPage = showSDocWithMode pagemode
 
-showOneLine :: DynFlags -> PprStyle -> SDoc -> String
+showOneLine :: SDocContext -> SDoc -> String
 showOneLine = showSDocWithMode OneLineMode
 
-showSDocWithMode :: Mode -> DynFlags -> PprStyle -> SDoc -> String
-showSDocWithMode md dflags pprstyle sdoc = renderStyle style' doc
+showSDocWithMode :: Mode -> SDocContext -> SDoc -> String
+showSDocWithMode md ctx sdoc = renderStyle style' doc
   where
-    ctx = initSDocContext dflags pprstyle
     doc = runSDoc sdoc ctx
     style' = style { mode = md, lineLength = sdocLineLength ctx }
 

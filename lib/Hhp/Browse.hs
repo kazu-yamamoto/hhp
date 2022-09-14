@@ -8,8 +8,11 @@ import qualified GHC as G
 import GHC.Core.TyCon (isAlgTyCon)
 import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy, mkVisFunTy)
 import GHC.Data.FastString (mkFastString)
+import GHC.Driver.Session (initSDocContext)
 import GHC.Types.Name (getOccString)
+import GHC.Utils.Monad (liftIO)
 
+import qualified Control.Exception as E
 import Control.Monad.Catch (SomeException(..), handle, catch)
 import Data.Char (isAlpha)
 import Data.List (sort)
@@ -54,10 +57,16 @@ browse opt pkgmdl = do
     -- If CmdLineError is signalled, we assume the user
     -- tried browsing a local module.
     getModule = browsePackageModule `catch` fallback `catch` handler
-    browsePackageModule = G.findModule mdlname mpkgid >>= G.getModuleInfo
+    browsePackageModule = do
+        -- "findModule" of GHC 9.2 or earlier throws CmdLineError.
+        -- But that of GHC 9.4 does not, sigh.
+        mx <- G.findModule mdlname mpkgid >>= G.getModuleInfo
+        case mx of
+          Just _ -> return mx
+          _      -> liftIO $ E.throwIO $ CmdLineError "for GHC 9.4"
     browseLocalModule = handle handler $ do
-      setTargetFiles [mdl]
-      G.findModule mdlname Nothing >>= G.getModuleInfo
+        setTargetFiles [mdl]
+        G.findModule mdlname Nothing >>= G.getModuleInfo
     fallback (CmdLineError _) = browseLocalModule
     fallback _                = return Nothing
     handler (SomeException _) = return Nothing
@@ -119,7 +128,7 @@ formatType :: DynFlags -> Type -> String
 formatType dflag a = showOutputable dflag $ removeForAlls a
 
 showOutputable :: DynFlags -> Type -> String
-showOutputable dflag = unwords . lines . showPage dflag styleUnqualified . pprTypeForUser
+showOutputable dflag = unwords . lines . showPage (initSDocContext dflag styleUnqualified) . pprSigmaType
 
 tyType :: TyCon -> Maybe String
 tyType typ

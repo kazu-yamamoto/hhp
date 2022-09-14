@@ -7,7 +7,7 @@ module Hhp.Info (
   , types
   ) where
 
-import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, Type, LPat, LHsExpr)
+import GHC (Ghc, TypecheckedModule(..), SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, Type, LPat, LHsExpr)
 import qualified GHC as G
 import GHC.Core.Type (mkVisFunTys)
 import GHC.Core.Utils (exprType)
@@ -15,9 +15,9 @@ import GHC.Hs.Binds (HsBindLR(..))
 import GHC.Hs.Expr (MatchGroupTc(..))
 import GHC.Hs.Extension (GhcTc)
 import GHC.HsToCore (deSugarExpr)
-import GHC.Tc.Utils.Zonk (hsPatType)
 import GHC.Utils.Monad (liftIO)
-import GHC.Utils.Outputable (PprStyle)
+import GHC.Utils.Outputable (SDocContext)
+import GHC.Driver.Session (initSDocContext)
 
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)
@@ -54,9 +54,9 @@ info :: Options
      -> Ghc String
 info opt file expr = convert opt <$> handle handler body
   where
-    body = inModuleContext file $ \dflag style -> do
+    body = inModuleContext file $ \ctx -> do
         sdoc <- infoThing expr
-        return $ showPage dflag style sdoc
+        return $ showPage ctx sdoc
     handler (SomeException _e) = return $ "Cannot show info: " ++ show _e
 
 ----------------------------------------------------------------
@@ -80,10 +80,10 @@ types :: Options
       -> Ghc String
 types opt file lineNo colNo = convert opt <$> handle handler body
   where
-    body = inModuleContext file $ \dflag style -> do
+    body = inModuleContext file $ \ctx -> do
         modSum <- fileModSummary file
         srcSpanTypes <- getSrcSpanType modSum lineNo colNo
-        return $ map (toTup dflag style) $ sortBy (cmp `on` fst) srcSpanTypes
+        return $ map (toTup ctx) $ sortBy (cmp `on` fst) srcSpanTypes
     handler (SomeException _) = return []
 
 type LExpression = LHsExpr GhcTc
@@ -108,25 +108,25 @@ cmp a b
   | b `G.isSubspanOf` a = O.GT
   | otherwise           = O.EQ
 
-toTup :: DynFlags -> PprStyle -> (SrcSpan, Type) -> ((Int,Int,Int,Int),String)
-toTup dflag style (spn, typ) = (fourInts spn, pretty dflag style typ)
+toTup :: SDocContext -> (SrcSpan, Type) -> ((Int,Int,Int,Int),String)
+toTup ctx (spn, typ) = (fourInts spn, pretty ctx typ)
 
 fourInts :: SrcSpan -> (Int,Int,Int,Int)
 fourInts = fromMaybe (0,0,0,0) . getSrcSpan
 
-pretty :: DynFlags -> PprStyle -> Type -> String
-pretty dflag style = showOneLine dflag style . pprTypeForUser
+pretty :: SDocContext -> Type -> String
+pretty ctx = showOneLine ctx . pprSigmaType
 
 ----------------------------------------------------------------
 
-inModuleContext :: FilePath -> (DynFlags -> PprStyle -> Ghc a) -> Ghc a
+inModuleContext :: FilePath -> (SDocContext -> Ghc a) -> Ghc a
 inModuleContext file action =
     withDynFlags (setWarnTypedHoles . setDeferTypeErrors . setNoWarningFlags) $ do
     setTargetFiles [file]
     withContext $ do
         dflag <- G.getSessionDynFlags
         style <- getStyle
-        action dflag style
+        action $ initSDocContext dflag style
 
 ----------------------------------------------------------------
 
