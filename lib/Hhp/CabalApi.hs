@@ -24,7 +24,11 @@ import Distribution.Text (display)
 import Distribution.Verbosity (silent)
 import Distribution.Version (Version)
 import Distribution.PackageDescription.Configuration (finalizePD)
+#if MIN_VERSION_Cabal(3,8,0)
+import Distribution.Simple.PackageDescription (readGenericPackageDescription)
+#else
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+#endif
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 import Distribution.Types.Flag (mkFlagAssignment, mkFlagName)
 import Distribution.Types.PackageName (unPackageName)

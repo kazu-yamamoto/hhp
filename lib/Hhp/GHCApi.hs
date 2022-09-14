@@ -148,7 +148,7 @@ addCmdOpts cmdOpts df =
 -- | Set the files as targets and load them.
 setTargetFiles :: [FilePath] -> Ghc ()
 setTargetFiles files = do
-    targets <- forM files $ \file -> G.guessTarget file Nothing
+    targets <- forM files $ \file -> guessTarget file
     G.setTargets targets
     void $ G.load LoadAllTargets
 

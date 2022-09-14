@@ -9,6 +9,7 @@ import GHC.Core.TyCon (isAlgTyCon)
 import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy, mkVisFunTy)
 import GHC.Data.FastString (mkFastString)
 import GHC.Types.Name (getOccString)
+import GHC.Driver.Session (initSDocContext)
 
 import Control.Monad.Catch (SomeException(..), handle, catch)
 import Data.Char (isAlpha)
@@ -119,7 +120,7 @@ formatType :: DynFlags -> Type -> String
 formatType dflag a = showOutputable dflag $ removeForAlls a
 
 showOutputable :: DynFlags -> Type -> String
-showOutputable dflag = unwords . lines . showPage dflag styleUnqualified . pprTypeForUser
+showOutputable dflag = unwords . lines . showPage (initSDocContext dflag styleUnqualified) . pprSigmaType
 
 tyType :: TyCon -> Maybe String
 tyType typ

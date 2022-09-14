@@ -13,6 +13,7 @@ import qualified GHC as G
 import GHC.Unit.Info (UnitInfo, unitExposedModules, mkUnit)
 import GHC.Unit.State (listUnitInfo, UnitState)
 import GHC.Utils.Outputable (ppr)
+import GHC.Driver.Session (initSDocContext)
 
 import Control.DeepSeq (force)
 import Control.Monad.Catch (SomeException(..), catch)
@@ -71,7 +72,7 @@ toNameModule dflag (m,Just inf) = map (\name -> (toStr name, mdl)) names
   where
     mdl = G.moduleNameString (G.moduleName m)
     names = G.modInfoExports inf
-    toStr = showOneLine dflag styleUnqualified . ppr
+    toStr = showOneLine (initSDocContext dflag styleUnqualified) . ppr
 
 packageModules :: UnitState -> [Module]
 packageModules us = concatMap fromUnitInfo $ listUnitInfo us

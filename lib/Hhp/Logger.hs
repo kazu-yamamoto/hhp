@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 
 module Hhp.Logger (
@@ -10,11 +11,17 @@ import GHC (Ghc, DynFlags(..), SrcSpan(..))
 import qualified GHC as G
 import GHC.Data.Bag (bagToList)
 import GHC.Data.FastString (unpackFS)
-import GHC.Driver.Flags (WarnReason)
-import GHC.Driver.Session (dopt, DumpFlag(Opt_D_dump_splices))
+import GHC.Driver.Session (dopt, DumpFlag(Opt_D_dump_splices), initSDocContext)
 import GHC.Utils.Error (Severity(..), errMsgSpan)
 import GHC.Utils.Monad (liftIO)
-import GHC.Utils.Outputable (PprStyle, SDoc, defaultDumpStyle)
+import GHC.Utils.Outputable (SDoc, SDocContext)
+
+#if __GLASGOW_HASKELL__ >= 904
+import GHC.Utils.Error (MessageClass(..))
+import GHC.Utils.Logger (LogFlags(..))
+#else
+import Hhp.Doc (styleUnqualified)
+#endif
 
 import Control.Monad.Catch (handle)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef, modifyIORef)
@@ -29,7 +36,8 @@ import Hhp.Types (Options(..), convert)
 
 ----------------------------------------------------------------
 
-type LogInfo = (DynFlags,WarnReason,Severity,SrcSpan,SDoc)
+-- type LogInfo = (DynFlags,Severity,SrcSpan,SDoc)
+type LogInfo = (SDocContext,Severity,SrcSpan,SDoc)
 
 newtype LogRef = LogRef (IORef ([LogInfo] -> [LogInfo]))
 
@@ -45,8 +53,17 @@ readAndClearLogRef opt (LogRef ref) = do
     return $! convert opt logmsg
 
 appendLogRef :: LogRef -> LogAction
-appendLogRef (LogRef ref) df wr sev src msg = do
-    let !l = (df, wr, sev, src, msg)
+#if __GLASGOW_HASKELL__ >= 904
+appendLogRef (LogRef ref) flag mc src msg = do
+    let sev = case mc of
+          MCDiagnostic sev0 _ -> sev0
+        ctx = log_default_user_context flag
+        !l = (ctx, sev, src, msg)
+#else
+appendLogRef (LogRef ref) flag _ sev src msg = do
+    let ctx = initSDocContext flag styleUnqualified
+        !l = (ctx, sev, src, msg)
+#endif
     modifyIORef ref (\b -> b . (l:))
 
 ----------------------------------------------------------------
@@ -72,30 +89,28 @@ sourceError :: Options -> SourceError -> Ghc (Either String String)
 sourceError opt err = do
     dflag <- G.getSessionDynFlags
     style <- getStyle
-    let ret = convert opt . errBagToStrList dflag style . srcErrorMessages $ err
+    let ctx = initSDocContext dflag style
+        ret = convert opt . errBagToStrList ctx . srcErrorMessages $ err
     return (Left ret)
 
-errBagToStrList :: DynFlags -> PprStyle -> ErrorMessages -> [String]
-errBagToStrList dflag style = map (ppErrMsg style) . reverse . bagToList
+errBagToStrList :: SDocContext -> ErrorMessages -> [String]
+errBagToStrList ctx = map ppErrMsg  . reverse . bagToList . getMessages
   where
-    ppErrMsg _style_fixme err = ppMsg (dflag,undefined,SevError,spn, msg) -- ++ ext
+    ppErrMsg err = showPage ctx msg
        where
          spn = errMsgSpan err
          msg = pprLocErrMessage err
-         -- fixme
-    --     ext = showPage dflag style (pprLocErrMsg $ errMsgReason err)
 
-ppMsg :: LogInfo -> String
-ppMsg (dflag,_,sev,spn,msg)
-  | isDumpSplices dflag = cts
-  | otherwise           = prefix ++ cts
+ppMsg :: (SDocContext, Severity, SrcSpan, SDoc) -> String
+ppMsg (ctx,sev,spn,msg) = prefix ++ cts
   where
-    cts = showPage dflag defaultDumpStyle msg
+    cts = showPage ctx msg
     prefix = fromMaybe checkErrorPrefix $ do
         (line,col,_,_) <- getSrcSpan spn
         file <- normalise <$> getSrcFile spn
         let severityCaption = showSeverityCaption sev
         return $ file ++ ":" ++ show line ++ ":" ++ show col ++ ":" ++ severityCaption
+
 
 checkErrorPrefix :: String
 checkErrorPrefix = "Dummy:0:0:Error:"
