@@ -20,6 +20,7 @@ Version 1.x.x supports:
 
 - GHC 9.0 - Cabal 3.4
 - GHC 9.2 - Cabal 3.6
+- GHC 9.4 - Cabal 3.8
 
 Version 0.x.x supports:
 
