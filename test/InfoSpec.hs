@@ -53,6 +53,6 @@ spec = do
                 res `shouldSatisfy` ("bar :: [Char]" `isPrefixOf`)
 
         it "doesn't fail on unicode output" $ do
-            hhpcPath <- replace "/t/" "/x/" . replace "spec" "hhpc" <$> getExecutablePath
+            hhpcPath <- replace "\\t\\" "\\x\\" . replace "/t/" "/x/" . replace "spec" "hhpc" <$> getExecutablePath
             code <- rawSystem hhpcPath ["info", "test/data/Unicode.hs", "unicode"]
             code `shouldSatisfy` (== ExitSuccess)
