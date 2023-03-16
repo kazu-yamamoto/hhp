@@ -3,7 +3,6 @@ module Hhp.List (listModules, modules) where
 import GHC (Ghc)
 import qualified GHC as G
 
-import GHC.Unit.Module.Name (moduleNameString)
 import GHC.Unit.State (lookupModuleInAllUnits, listVisibleModuleNames)
 import GHC.Unit.Types (moduleName)
 
@@ -26,7 +25,7 @@ listModules opt cradle = withGHC' $ do
 modules :: Options -> Ghc String
 modules opt = convert opt . arrange <$> (getModules `catch` handler)
   where
-    arrange = nub . sort . map (moduleNameString . moduleName)
+    arrange = nub . sort . map (G.moduleNameString . moduleName)
     handler (SomeException _) = return []
 
 ----------------------------------------------------------------

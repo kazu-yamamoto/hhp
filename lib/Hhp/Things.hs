@@ -40,7 +40,7 @@ infoThing :: String -> Ghc SDoc
 infoThing str = do
     names <- G.parseName str
     mb_stuffs <- mapM (G.getInfo False) names
-    let filtered = filterOutChildren getTyThing $ catMaybes mb_stuffs
+    let filtered = filterOutChildren getTyThing $ catMaybes $ fromNE mb_stuffs
     return $ vcat (intersperse (text "") $ map (pprInfo . fixInfo) filtered)
   where
     getTyThing (t,_,_,_,_) = t

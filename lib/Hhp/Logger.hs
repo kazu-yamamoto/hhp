@@ -53,7 +53,14 @@ readAndClearLogRef opt (LogRef ref) = do
     return $! convert opt logmsg
 
 appendLogRef :: LogRef -> LogAction
-#if __GLASGOW_HASKELL__ >= 904
+#if __GLASGOW_HASKELL__ >= 906
+appendLogRef (LogRef ref) flag mc src msg = do
+    let (dump,sev) = case mc of
+          MCDiagnostic sev0 _ _ -> (False, sev0)
+          _                     -> (True,  SevError) -- dummy
+        ctx = log_default_user_context flag
+        !l = (dump, ctx, sev, src, msg)
+#elif __GLASGOW_HASKELL__ >= 904
 appendLogRef (LogRef ref) flag mc src msg = do
     let (dump,sev) = case mc of
           MCDiagnostic sev0 _ -> (False, sev0)

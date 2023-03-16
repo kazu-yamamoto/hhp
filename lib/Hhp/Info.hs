@@ -9,7 +9,6 @@ module Hhp.Info (
 
 import GHC (Ghc, TypecheckedModule(..), SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, Type, LPat, LHsExpr)
 import qualified GHC as G
-import GHC.Core.Type (mkVisFunTys)
 import GHC.Core.Utils (exprType)
 import GHC.Hs.Binds (HsBindLR(..))
 import GHC.Hs.Expr (MatchGroupTc(..))
@@ -169,7 +168,7 @@ getTypeLBinding _ (L spnA FunBind{fun_matches = m}) = return $ Just (spn, typ)
   where
     in_tys  = mg_arg_tys $ mg_ext m
     out_typ = mg_res_ty  $ mg_ext m
-    typ = mkVisFunTys in_tys out_typ
+    typ = mkScaledFunctionTys in_tys out_typ
     spn = locA spnA
 getTypeLBinding _ _ = return Nothing
 

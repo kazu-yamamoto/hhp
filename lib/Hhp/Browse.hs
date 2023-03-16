@@ -6,7 +6,7 @@ module Hhp.Browse (
 import GHC (Ghc, GhcException(CmdLineError), ModuleInfo, Name, TyThing, DynFlags, Type, TyCon)
 import qualified GHC as G
 import GHC.Core.TyCon (isAlgTyCon)
-import GHC.Core.Type (dropForAlls, splitFunTy_maybe, isPredTy, mkVisFunTy)
+import GHC.Core.Type (dropForAlls)
 import GHC.Data.FastString (mkFastString)
 import GHC.Driver.Session (initSDocContext)
 import GHC.Types.Name (getOccString)
@@ -141,6 +141,10 @@ tyType typ
     | otherwise                   = Nothing
 
 removeForAlls :: Type -> Type
+removeForAlls = dropForAlls
+
+{-
+removeForAlls :: Type -> Type
 removeForAlls ty = removeForAlls' ty' tty'
   where
     ty'  = dropForAlls ty
@@ -151,3 +155,4 @@ removeForAlls' ty Nothing = ty
 removeForAlls' ty (Just (pre, ftype, x))
     | isPredTy pre        = mkVisFunTy pre (dropForAlls ftype) x
     | otherwise           = ty
+-}
