@@ -5,8 +5,8 @@ module Hhp.Doc (
   , styleUnqualified
   ) where
 
-import GHC (Ghc, getPrintUnqual)
-import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, runSDoc, PrintUnqualified, PprStyle, Depth(..), mkUserStyle, sdocLineLength, SDocContext)
+import GHC (Ghc)
+import GHC.Utils.Outputable (PprStyle, SDoc, neverQualify, runSDoc, PprStyle, Depth(..), mkUserStyle, sdocLineLength, SDocContext)
 import GHC.Utils.Ppr (Mode(..), Style(..), renderStyle, style)
 
 import Hhp.Gap
@@ -28,10 +28,10 @@ showSDocWithMode md ctx sdoc = renderStyle style' doc
 ----------------------------------------------------------------
 
 getStyle :: Ghc PprStyle
-getStyle = makeUserStyle <$> getPrintUnqual
+getStyle = makeUserStyle <$> getNamePprCtx
 
 styleUnqualified :: PprStyle
 styleUnqualified = makeUserStyle neverQualify
 
-makeUserStyle :: PrintUnqualified -> PprStyle
+makeUserStyle :: NamePprCtx -> PprStyle
 makeUserStyle pu = mkUserStyle pu AllTheWay
