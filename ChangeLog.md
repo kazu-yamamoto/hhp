@@ -1,5 +1,13 @@
 # ChangeLog for HHP(Happy Haskell Programming)
 
+## 2023-03-17 v1.0.2
+
+- Supporting GHC 9.6.
+
+## 2022-09-15 v1.0.1
+
+- Supporting GHC 9.6.
+
 ## 2022-05-30 v1.0.0
 
 - Supporting GHC 9.x only.
