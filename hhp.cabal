@@ -195,3 +195,4 @@ test-suite spec
 
     if flag(hlint)
         cpp-options: -DHLINT
+        build-depends: hlint >=1.8.61
