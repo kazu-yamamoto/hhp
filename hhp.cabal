@@ -60,6 +60,9 @@ source-repository head
     type:     git
     location: git://github.com/kazu-yamamoto/hhp.git
 
+flag hlint
+    description: Require hlint
+
 library
     exposed-modules:
         Hhp
@@ -101,10 +104,13 @@ library
         exceptions,
         filepath,
         ghc,
-        hlint >=1.8.61,
         process,
         syb,
         ghc-boot
+
+    if flag(hlint)
+        cpp-options:   -DHLINT
+        build-depends: hlint >=1.8.61
 
 executable hhpc
     main-is:          hhpc.hs
@@ -185,5 +191,7 @@ test-suite spec
         hspec >=1.7.1,
         process,
         syb,
-        hlint >=1.7.1,
         ghc-boot
+
+    if flag(hlint)
+        cpp-options: -DHLINT

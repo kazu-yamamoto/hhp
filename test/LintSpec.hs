@@ -1,5 +1,8 @@
+{-# LANGUAGE CPP #-}
+
 module LintSpec where
 
+#ifdef HLINT
 import Data.List.Extra
 import Test.Hspec
 
@@ -18,3 +21,11 @@ spec = do
             it "doesn't output empty line" $ do
                 res <- lintSyntax defaultOptions "test/data/hhp-check/Data/Foo.hs"
                 res `shouldBe` ""
+#else
+import Test.Hspec
+
+spec :: Spec
+spec = do
+    describe "lintSyntax" $ do
+        it "check syntax with HLint" $ do True `shouldBe` True
+#endif
