@@ -160,6 +160,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro hhp-executable-find (cmd &rest body)
+  ;; (declare (indent 1))
+  `(if (not (executable-find ,cmd))
+       (message "\"%s\" not found" ,cmd)
+     ,@body))
+
+(put 'hhp-executable-find 'lisp-indent-function 1)
+
 (defun hhp-run-hhp (cmds &optional prog)
   (let ((target (or prog hhpc-command)))
     (hhp-executable-find target
@@ -169,14 +177,6 @@
 	  (apply 'hhp-call-process target nil t nil
 		 (append (hhp-make-ghc-options) cmds))
 	  (buffer-substring (point-min) (1- (point-max))))))))
-
-(defmacro hhp-executable-find (cmd &rest body)
-  ;; (declare (indent 1))
-  `(if (not (executable-find ,cmd))
-       (message "\"%s\" not found" ,cmd)
-     ,@body))
-
-(put 'hhp-executable-find 'lisp-indent-function 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
