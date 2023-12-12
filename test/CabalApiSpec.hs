@@ -3,7 +3,7 @@
 module CabalApiSpec where
 
 import Control.Exception
-import System.Environment (unsetEnv, setEnv)
+import System.Environment (setEnv, unsetEnv)
 import Test.Hspec
 
 import Hhp.CabalApi
@@ -12,55 +12,70 @@ spec :: Spec
 spec = do
     describe "parseCabalFile" $ do
         it "throws an exception if the cabal file is broken" $ do
-            parseCabalFile "test/data/broken-cabal/broken.cabal" `shouldThrow` (\(_::IOException) -> True)
+            parseCabalFile "test/data/broken-cabal/broken.cabal"
+                `shouldThrow` (\(_ :: IOException) -> True)
 
-{- For success, "test/data/cabal.sandbox.config" must contain absolute paths.
-    describe "getCompilerOptions" $ do
-        it "gets necessary CompilerOptions" $ do
-            withDirectory "test/data/subdir1/subdir2" $ \dir -> do
-                cradle <- findCradle
-                pkgDesc <- parseCabalFile $ fromJust $ cradleCabalFile cradle
-                print cradle
-                res <- getCompilerOptions [] cradle pkgDesc
-                let res' = res {
-                        ghcOptions  = ghcOptions res
-                      , includeDirs = map (toRelativeDir dir) (includeDirs res)
-                      }
-                ghcOptions res' `shouldBe` ["-global-package-db", "-no-user-package-db","-package-db","test/data/.cabal-sandbox/i386-osx-ghc-7.6.3-packages.conf.d","-XHaskell98"]
-                includeDirs res' `shouldBe` ["test/data","test/data/dist/build","test/data/dist/build/autogen","test/data/subdir1/subdir2","test/data/test"]
-                depPackages res' `shouldSatisfy` (("Cabal", "1.18.1.3", "2b161c6bf77657aa17e1681d83cb051b")`elem`)
--}
+    {- For success, "test/data/cabal.sandbox.config" must contain absolute paths.
+        describe "getCompilerOptions" $ do
+            it "gets necessary CompilerOptions" $ do
+                withDirectory "test/data/subdir1/subdir2" $ \dir -> do
+                    cradle <- findCradle
+                    pkgDesc <- parseCabalFile $ fromJust $ cradleCabalFile cradle
+                    print cradle
+                    res <- getCompilerOptions [] cradle pkgDesc
+                    let res' = res {
+                            ghcOptions  = ghcOptions res
+                          , includeDirs = map (toRelativeDir dir) (includeDirs res)
+                          }
+                    ghcOptions res' `shouldBe` ["-global-package-db", "-no-user-package-db","-package-db","test/data/.cabal-sandbox/i386-osx-ghc-7.6.3-packages.conf.d","-XHaskell98"]
+                    includeDirs res' `shouldBe` ["test/data","test/data/dist/build","test/data/dist/build/autogen","test/data/subdir1/subdir2","test/data/test"]
+                    depPackages res' `shouldSatisfy` (("Cabal", "1.18.1.3", "2b161c6bf77657aa17e1681d83cb051b")`elem`)
+    -}
 
     describe "cabalDependPackages" $ do
         it "extracts dependent packages" $ do
-            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/cabalapi.cabal"
-            pkgs `shouldBe` ["Cabal","base","template-haskell"]
+            pkgs <-
+                cabalDependPackages . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/cabalapi.cabal"
+            pkgs `shouldBe` ["Cabal", "base", "template-haskell"]
 
     describe "cabalSourceDirs" $ do
         it "extracts all hs-source-dirs" $ do
-            dirs <- cabalSourceDirs . cabalAllBuildInfo <$> parseCabalFile "test/data/check-test-subdir/check-test-subdir.cabal"
+            dirs <-
+                cabalSourceDirs . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/check-test-subdir/check-test-subdir.cabal"
             dirs `shouldBe` ["src", "test"]
         it "extracts all hs-source-dirs including \".\"" $ do
-            dirs <- cabalSourceDirs . cabalAllBuildInfo <$> parseCabalFile "test/data/cabalapi.cabal"
+            dirs <-
+                cabalSourceDirs . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/cabalapi.cabal"
             dirs `shouldBe` [".", "test"]
 
     describe "cabal-subLibraries" $ do
         it "dependent packages with sublib" $ do
-            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-sublib/check-sublib.cabal"
+            pkgs <-
+                cabalDependPackages . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/check-sublib/check-sublib.cabal"
             pkgs `shouldBe` ["array", "base", "bytestring"]
 
     describe "HHP_CABAL_FLAGS" $ do
         it "dependent packages without flags" $ do
             unsetEnv "HHP_CABAL_FLAGS"
-            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs <-
+                cabalDependPackages . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
             pkgs `shouldBe` ["base", "directory"]
         it "dependent packages with foo flag" $ do
             setEnv "HHP_CABAL_FLAGS" "foo"
-            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs <-
+                cabalDependPackages . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
             pkgs `shouldBe` ["base", "directory", "filepath"]
         it "dependent packages with foo and -bar flag" $ do
             setEnv "HHP_CABAL_FLAGS" "foo -bar"
-            pkgs <- cabalDependPackages . cabalAllBuildInfo <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
+            pkgs <-
+                cabalDependPackages . cabalAllBuildInfo
+                    <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
             pkgs `shouldBe` ["base", "filepath"]
 
 {-

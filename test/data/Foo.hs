@@ -1,6 +1,7 @@
 module Foo (foo, fooQ) where
+
 import Language.Haskell.TH
-import Language.Haskell.TH.Quote (QuasiQuoter(..))
+import Language.Haskell.TH.Quote (QuasiQuoter (..))
 
 foo :: ExpQ
 foo = stringE "foo"

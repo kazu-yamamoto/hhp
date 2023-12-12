@@ -2,8 +2,8 @@ module GhcPkgSpec where
 
 import Test.Hspec
 
-import Hhp.Types
 import Hhp.GhcPkg
+import Hhp.Types
 
 spec :: Spec
 spec = do
@@ -19,4 +19,5 @@ spec = do
         it "find a config file and extracts packages" $ do
             sdb <- getSandboxDb "test/data/check-packageid"
             pkgs <- ghcPkgListEx [PackageDb sdb]
-            pkgs `shouldBe` [("template-haskell","2.8.0.0","32d4f24abdbb6bf41272b183b2e23e9c")]
+            pkgs
+                `shouldBe` [("template-haskell", "2.8.0.0", "32d4f24abdbb6bf41272b183b2e23e9c")]

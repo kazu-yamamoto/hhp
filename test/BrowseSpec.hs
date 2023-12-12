@@ -18,12 +18,14 @@ spec = do
     describe "browseModule -d" $ do
         it "lists up symbols with type info in the module" $ do
             cradle <- findCradle
-            syms <- lines <$> browseModule defaultOptions { detailed = True } cradle "Data.Either"
+            syms <-
+                lines <$> browseModule defaultOptions{detailed = True} cradle "Data.Either"
             syms `shouldContain` ["either :: (a -> c) -> (b -> c) -> Either a b -> c"]
 
         it "lists up data constructors with type info in the module" $ do
             cradle <- findCradle
-            syms <- lines <$> browseModule defaultOptions { detailed = True} cradle "Data.Either"
+            syms <-
+                lines <$> browseModule defaultOptions{detailed = True} cradle "Data.Either"
             syms `shouldContain` ["Left :: a -> Either a b"]
 
     describe "browseModule local" $ do
