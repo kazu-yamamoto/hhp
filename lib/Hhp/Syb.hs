@@ -1,12 +1,12 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Hhp.Syb (
-    listifySpans
-  ) where
+    listifySpans,
+) where
 
-import GHC (TypecheckedSource, GenLocated(L), isGoodSrcSpan, spans)
+import GHC (GenLocated (L), TypecheckedSource, isGoodSrcSpan, spans)
 
-import Data.Generics (Typeable, GenericQ, mkQ, gmapQ)
+import Data.Generics (GenericQ, Typeable, gmapQ, mkQ)
 
 import Hhp.Gap
 

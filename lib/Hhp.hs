@@ -1,37 +1,40 @@
 -- | The Happy Haskell Programming library.
 --   API for commands.
-
 module Hhp (
-  -- * Cradle
-    Cradle(..)
-  , findCradle
-  -- * Options
-  , Options(..)
-  , LineSeparator(..)
-  , OutputStyle(..)
-  , defaultOptions
-  -- * Types
-  , ModuleString
-  , Expression
-  -- * 'IO' utilities
-  , bootInfo
-  , browseModule
-  , checkSyntax
-  , lintSyntax
-  , expandTemplate
-  , infoExpr
-  , typeExpr
-  , listModules
-  , listLanguages
-  , listFlags
-  , debugInfo
-  , rootInfo
-  , packageDoc
-  , findSymbol
-  -- * Misc
-  , cProjectVersion
-  , cProjectVersionInt
-  ) where
+    -- * Cradle
+    Cradle (..),
+    findCradle,
+
+    -- * Options
+    Options (..),
+    LineSeparator (..),
+    OutputStyle (..),
+    defaultOptions,
+
+    -- * Types
+    ModuleString,
+    Expression,
+
+    -- * 'IO' utilities
+    bootInfo,
+    browseModule,
+    checkSyntax,
+    lintSyntax,
+    expandTemplate,
+    infoExpr,
+    typeExpr,
+    listModules,
+    listLanguages,
+    listFlags,
+    debugInfo,
+    rootInfo,
+    packageDoc,
+    findSymbol,
+
+    -- * Misc
+    cProjectVersion,
+    cProjectVersionInt,
+) where
 
 import Hhp.Boot
 import Hhp.Browse

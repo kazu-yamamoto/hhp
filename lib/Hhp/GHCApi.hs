@@ -1,35 +1,46 @@
-{-# LANGUAGE ScopedTypeVariables, RecordWildCards #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Hhp.GHCApi (
-    withGHC
-  , withGHC'
-  , initializeFlagsWithCradle
-  , setTargetFiles
-  , getDynamicFlags
-  , getSystemLibDir
-  , withDynFlags
-  , withCmdFlags
-  , setNoWarningFlags
-  , setAllWarningFlags
-  , setDeferTypedHoles
-  , setDeferTypeErrors
-  , setPartialSignatures
-  , setWarnTypedHoles
-  ) where
+    withGHC,
+    withGHC',
+    initializeFlagsWithCradle,
+    setTargetFiles,
+    getDynamicFlags,
+    getSystemLibDir,
+    withDynFlags,
+    withCmdFlags,
+    setNoWarningFlags,
+    setAllWarningFlags,
+    setDeferTypedHoles,
+    setDeferTypeErrors,
+    setPartialSignatures,
+    setWarnTypedHoles,
+) where
 
-import GHC (Ghc, DynFlags(..), LoadHowMuch(..))
+import GHC (DynFlags (..), Ghc, LoadHowMuch (..))
 import qualified GHC as G
 import qualified GHC.Data.EnumSet as E (EnumSet, empty)
-import GHC.Driver.Session (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages),WarningFlag(Opt_WarnTypedHoles),gopt_set, xopt_set, wopt_set,ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..), WarningFlag, parseDynamicFlagsCmdLine)
-import GHC.LanguageExtensions (Extension(..))
+import GHC.Driver.Session (
+    GeneralFlag (Opt_BuildingCabalPackage, Opt_HideAllPackages),
+    ModRenaming (..),
+    PackageArg (..),
+    PackageFlag (ExposePackage),
+    WarningFlag (Opt_WarnTypedHoles),
+    gopt_set,
+    parseDynamicFlagsCmdLine,
+    wopt_set,
+    xopt_set,
+ )
+import GHC.LanguageExtensions (Extension (..))
 import GHC.Utils.Monad (liftIO)
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
-import Control.Monad.Catch (SomeException, handle, bracket)
-import Data.Maybe (isJust, fromJust)
+import Control.Monad.Catch (SomeException, bracket, handle)
+import Data.Maybe (fromJust, isJust)
 import System.Exit (exitSuccess)
-import System.IO (hPutStr, hPrint, stderr)
+import System.IO (hPrint, hPutStr, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcess)
 
@@ -45,15 +56,18 @@ getSystemLibDir :: IO (Maybe FilePath)
 getSystemLibDir = do
     res <- readProcess "ghc" ["--print-libdir"] []
     return $ case res of
-        ""   -> Nothing
+        "" -> Nothing
         dirn -> Just (init dirn)
 
 ----------------------------------------------------------------
 
 -- | Converting the 'Ghc' monad to the 'IO' monad.
-withGHC :: FilePath  -- ^ A target file displayed in an error message.
-        -> Ghc a -- ^ 'Ghc' actions created by the Ghc utilities.
-        -> IO a
+withGHC
+    :: FilePath
+    -- ^ A target file displayed in an error message.
+    -> Ghc a
+    -- ^ 'Ghc' actions created by the Ghc utilities.
+    -> IO a
 withGHC file body = handle ignore $ withGHC' body
   where
     ignore :: SomeException -> IO a
@@ -70,20 +84,20 @@ withGHC' body = do
 ----------------------------------------------------------------
 
 importDirs :: [IncludeDir]
-importDirs = [".","..","../..","../../..","../../../..","../../../../.."]
+importDirs = [".", "..", "../..", "../../..", "../../../..", "../../../../.."]
 
-data Build = CabalPkg | SingleFile deriving Eq
+data Build = CabalPkg | SingleFile deriving (Eq)
 
 -- | Initialize the 'DynFlags' relating to the compilation of a single
 -- file or GHC session according to the 'Cradle' and 'Options'
 -- provided.
-initializeFlagsWithCradle ::
-           Options
-        -> Cradle
-        -> Ghc ()
+initializeFlagsWithCradle
+    :: Options
+    -> Cradle
+    -> Ghc ()
 initializeFlagsWithCradle opt cradle
-  | cabal     = withCabal <|> withSandbox
-  | otherwise = withSandbox
+    | cabal = withCabal <|> withSandbox
+    | otherwise = withSandbox
   where
     mCradleFile = cradleCabalFile cradle
     cabal = isJust mCradleFile
@@ -96,30 +110,35 @@ initializeFlagsWithCradle opt cradle
       where
         pkgOpts = ghcDbStackOpts $ cradlePkgDbStack cradle
         compOpts
-          | null pkgOpts = CompilerOptions ghcopts importDirs []
-          | otherwise    = CompilerOptions (ghcopts ++ pkgOpts) [wdir,rdir] []
+            | null pkgOpts = CompilerOptions ghcopts importDirs []
+            | otherwise = CompilerOptions (ghcopts ++ pkgOpts) [wdir, rdir] []
         wdir = cradleCurrentDir cradle
-        rdir = cradleRootDir    cradle
+        rdir = cradleRootDir cradle
 
 ----------------------------------------------------------------
 
-initSession :: Build
-            -> Options
-            -> CompilerOptions
-            -> Ghc ()
+initSession
+    :: Build
+    -> Options
+    -> CompilerOptions
+    -> Ghc ()
 initSession build Options{} CompilerOptions{..} = do
     df <- G.getSessionDynFlags
-    void $ G.setSessionDynFlags =<< addCmdOpts ghcOptions
-      ( setLinkerOptions
-      $ setIncludeDirs includeDirs
-      $ setBuildEnv build
-      $ setEmptyLogger
-      $ addPackageFlags depPackages df)
+    void $
+        G.setSessionDynFlags
+            =<< addCmdOpts
+                ghcOptions
+                ( setLinkerOptions $
+                    setIncludeDirs includeDirs $
+                        setBuildEnv build $
+                            setEmptyLogger $
+                                addPackageFlags depPackages df
+                )
 
 ----------------------------------------------------------------
 
 setIncludeDirs :: [IncludeDir] -> DynFlags -> DynFlags
-setIncludeDirs idirs df = df { importPaths = idirs }
+setIncludeDirs idirs df = df{importPaths = idirs}
 
 setBuildEnv :: Build -> DynFlags -> DynFlags
 setBuildEnv build = setHideAllPackages build . setCabalPackage build
@@ -134,14 +153,14 @@ setCabalPackage _ df = df
 -- | Enable hiding of all package not explicitly exposed (like Cabal does)
 setHideAllPackages :: Build -> DynFlags -> DynFlags
 setHideAllPackages CabalPkg df = gopt_set df Opt_HideAllPackages
-setHideAllPackages _ df        = df
+setHideAllPackages _ df = df
 
 -- | Parse command line ghc options and add them to the 'DynFlags' passed
 addCmdOpts :: [GHCOption] -> DynFlags -> Ghc DynFlags
 addCmdOpts cmdOpts df =
     tfst <$> parseDynamicFlagsCmdLine df (map G.noLoc cmdOpts)
   where
-    tfst (a,_,_) = a
+    tfst (a, _, _) = a
 
 ----------------------------------------------------------------
 
@@ -198,11 +217,11 @@ setPartialSignatures df = xopt_set (xopt_set df PartialTypeSignatures) NamedWild
 
 -- | Set 'DynFlags' equivalent to "-w:".
 setNoWarningFlags :: DynFlags -> DynFlags
-setNoWarningFlags df = df { warningFlags = E.empty}
+setNoWarningFlags df = df{warningFlags = E.empty}
 
 -- | Set 'DynFlags' equivalent to "-Wall".
 setAllWarningFlags :: DynFlags -> DynFlags
-setAllWarningFlags df = df { warningFlags = allWarningFlags }
+setAllWarningFlags df = df{warningFlags = allWarningFlags}
 
 {-# NOINLINE allWarningFlags #-}
 allWarningFlags :: E.EnumSet WarningFlag
@@ -218,9 +237,9 @@ setCabalPkg dflag = gopt_set dflag Opt_BuildingCabalPackage
 
 addPackageFlags :: [Package] -> DynFlags -> DynFlags
 addPackageFlags pkgs df =
-    df { packageFlags = packageFlags df ++ expose `map` pkgs }
+    df{packageFlags = packageFlags df ++ expose `map` pkgs}
   where
     expose pkg = ExposePackage pkgid (PackageArg name) (ModRenaming True [])
       where
-        (name,_,_) = pkg
+        (name, _, _) = pkg
         pkgid = showPkgId pkg

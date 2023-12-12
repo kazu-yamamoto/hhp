@@ -1,34 +1,48 @@
-{-# LANGUAGE TupleSections, FlexibleInstances, Rank2Types #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE TupleSections #-}
 
 module Hhp.Info (
-    infoExpr
-  , info
-  , typeExpr
-  , types
-  ) where
+    infoExpr,
+    info,
+    typeExpr,
+    types,
+) where
 
-import GHC (Ghc, TypecheckedModule(..), SrcSpan, Type, GenLocated(L), ModSummary, mgModSummaries, mg_ext, LHsBind, Type, LPat, LHsExpr)
+import GHC (
+    GenLocated (L),
+    Ghc,
+    LHsBind,
+    LHsExpr,
+    LPat,
+    ModSummary,
+    SrcSpan,
+    Type,
+    TypecheckedModule (..),
+    mgModSummaries,
+    mg_ext,
+ )
 import qualified GHC as G
 import GHC.Core.Utils (exprType)
-import GHC.Hs.Binds (HsBindLR(..))
-import GHC.Hs.Expr (MatchGroupTc(..))
+import GHC.Driver.Session (initSDocContext)
+import GHC.Hs.Binds (HsBindLR (..))
+import GHC.Hs.Expr (MatchGroupTc (..))
 import GHC.Hs.Extension (GhcTc)
 import GHC.HsToCore (deSugarExpr)
 import GHC.Utils.Monad (liftIO)
 import GHC.Utils.Outputable (SDocContext)
-import GHC.Driver.Session (initSDocContext)
 
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)
-import Control.Monad.Catch (SomeException(..), handle, bracket)
+import Control.Monad.Catch (SomeException (..), bracket, handle)
 import Data.Function (on)
 import Data.List (sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Ord as O
 
-import Hhp.Doc (showPage, showOneLine, getStyle)
-import Hhp.Gap
+import Hhp.Doc (getStyle, showOneLine, showPage)
 import Hhp.GHCApi
+import Hhp.Gap
 import Hhp.Logger (getSrcSpan)
 import Hhp.Syb
 import Hhp.Things
@@ -37,20 +51,26 @@ import Hhp.Types
 ----------------------------------------------------------------
 
 -- | Obtaining information of a target expression. (GHCi's info:)
-infoExpr :: Options
-         -> Cradle
-         -> FilePath     -- ^ A target file.
-         -> Expression   -- ^ A Haskell expression.
-         -> IO String
+infoExpr
+    :: Options
+    -> Cradle
+    -> FilePath
+    -- ^ A target file.
+    -> Expression
+    -- ^ A Haskell expression.
+    -> IO String
 infoExpr opt cradle file expr = withGHC' $ do
     initializeFlagsWithCradle opt cradle
     info opt file expr
 
 -- | Obtaining information of a target expression. (GHCi's info:)
-info :: Options
-     -> FilePath     -- ^ A target file.
-     -> Expression   -- ^ A Haskell expression.
-     -> Ghc String
+info
+    :: Options
+    -> FilePath
+    -- ^ A target file.
+    -> Expression
+    -- ^ A Haskell expression.
+    -> Ghc String
 info opt file expr = convert opt <$> handle handler body
   where
     body = inModuleContext file $ \ctx -> do
@@ -61,22 +81,30 @@ info opt file expr = convert opt <$> handle handler body
 ----------------------------------------------------------------
 
 -- | Obtaining type of a target expression. (GHCi's type:)
-typeExpr :: Options
-         -> Cradle
-         -> FilePath     -- ^ A target file.
-         -> Int          -- ^ Line number.
-         -> Int          -- ^ Column number.
-         -> IO String
+typeExpr
+    :: Options
+    -> Cradle
+    -> FilePath
+    -- ^ A target file.
+    -> Int
+    -- ^ Line number.
+    -> Int
+    -- ^ Column number.
+    -> IO String
 typeExpr opt cradle file lineNo colNo = withGHC' $ do
     initializeFlagsWithCradle opt cradle
     types opt file lineNo colNo
 
 -- | Obtaining type of a target expression. (GHCi's type:)
-types :: Options
-      -> FilePath     -- ^ A target file.
-      -> Int          -- ^ Line number.
-      -> Int          -- ^ Column number.
-      -> Ghc String
+types
+    :: Options
+    -> FilePath
+    -- ^ A target file.
+    -> Int
+    -- ^ Line number.
+    -> Int
+    -- ^ Column number.
+    -> Ghc String
 types opt file lineNo colNo = convert opt <$> handle handler body
   where
     body = inModuleContext file $ \ctx -> do
@@ -86,8 +114,8 @@ types opt file lineNo colNo = convert opt <$> handle handler body
     handler (SomeException _) = return []
 
 type LExpression = LHsExpr GhcTc
-type LBinding    = LHsBind GhcTc
-type LPattern    = LPat GhcTc
+type LBinding = LHsBind GhcTc
+type LPattern = LPat GhcTc
 
 getSrcSpanType :: ModSummary -> Int -> Int -> Ghc [(SrcSpan, Type)]
 getSrcSpanType modSum lineNo colNo = do
@@ -103,15 +131,15 @@ getSrcSpanType modSum lineNo colNo = do
 
 cmp :: SrcSpan -> SrcSpan -> Ordering
 cmp a b
-  | a `G.isSubspanOf` b = O.LT
-  | b `G.isSubspanOf` a = O.GT
-  | otherwise           = O.EQ
+    | a `G.isSubspanOf` b = O.LT
+    | b `G.isSubspanOf` a = O.GT
+    | otherwise = O.EQ
 
-toTup :: SDocContext -> (SrcSpan, Type) -> ((Int,Int,Int,Int),String)
+toTup :: SDocContext -> (SrcSpan, Type) -> ((Int, Int, Int, Int), String)
 toTup ctx (spn, typ) = (fourInts spn, pretty ctx typ)
 
-fourInts :: SrcSpan -> (Int,Int,Int,Int)
-fourInts = fromMaybe (0,0,0,0) . getSrcSpan
+fourInts :: SrcSpan -> (Int, Int, Int, Int)
+fourInts = fromMaybe (0, 0, 0, 0) . getSrcSpan
 
 pretty :: SDocContext -> Type -> String
 pretty ctx = showOneLine ctx . pprSigmaType
@@ -121,11 +149,11 @@ pretty ctx = showOneLine ctx . pprSigmaType
 inModuleContext :: FilePath -> (SDocContext -> Ghc a) -> Ghc a
 inModuleContext file action =
     withDynFlags (setWarnTypedHoles . setDeferTypeErrors . setNoWarningFlags) $ do
-    setTargetFiles [file]
-    withContext $ do
-        dflag <- G.getSessionDynFlags
-        style <- getStyle
-        action $ initSDocContext dflag style
+        setTargetFiles [file]
+        withContext $ do
+            dflag <- G.getSessionDynFlags
+            style <- getStyle
+            action $ initSDocContext dflag style
 
 ----------------------------------------------------------------
 
@@ -134,8 +162,8 @@ fileModSummary file = do
     mss <- mgModSummaries <$> G.getModuleGraph
     let xs = filter (\m -> G.ml_hs_file (G.ms_location m) == Just file) mss
     case xs of
-      [ms] -> return ms
-      _    -> error "fileModSummary"
+        [ms] -> return ms
+        _ -> error "fileModSummary"
 
 withContext :: Ghc a -> Ghc a
 withContext action = bracket setup teardown body
@@ -156,18 +184,19 @@ withContext action = bracket setup teardown body
 
 ----------------------------------------------------------------
 
-getTypeLExpression :: TypecheckedModule -> LExpression -> Ghc (Maybe (SrcSpan, Type))
+getTypeLExpression
+    :: TypecheckedModule -> LExpression -> Ghc (Maybe (SrcSpan, Type))
 getTypeLExpression _ e@(L spnA _) = do
     hs_env <- G.getSession
     (_, mbc) <- liftIO $ deSugarExpr hs_env e
     let spn = locA spnA
-    return $ (spn, ) . exprType <$> mbc
+    return $ (spn,) . exprType <$> mbc
 
 getTypeLBinding :: TypecheckedModule -> LBinding -> Ghc (Maybe (SrcSpan, Type))
 getTypeLBinding _ (L spnA FunBind{fun_matches = m}) = return $ Just (spn, typ)
   where
-    in_tys  = mg_arg_tys $ mg_ext m
-    out_typ = mg_res_ty  $ mg_ext m
+    in_tys = mg_arg_tys $ mg_ext m
+    out_typ = mg_res_ty $ mg_ext m
     typ = mkScaledFunctionTys in_tys out_typ
     spn = locA spnA
 getTypeLBinding _ _ = return Nothing

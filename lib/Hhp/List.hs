@@ -3,14 +3,14 @@ module Hhp.List (listModules, modules) where
 import GHC (Ghc)
 import qualified GHC as G
 
-import GHC.Unit.State (lookupModuleInAllUnits, listVisibleModuleNames)
+import GHC.Unit.State (listVisibleModuleNames, lookupModuleInAllUnits)
 import GHC.Unit.Types (moduleName)
 
-import Control.Monad.Catch (SomeException(..), catch)
+import Control.Monad.Catch (SomeException (..), catch)
 import Data.List (nub, sort)
 
-import Hhp.Gap
 import Hhp.GHCApi
+import Hhp.Gap
 import Hhp.Types
 
 ----------------------------------------------------------------
@@ -34,4 +34,4 @@ getModules :: Ghc [G.Module]
 getModules = do
     us <- getUnitState
     let modNames = listVisibleModuleNames us
-    return [ m | mn <- modNames, (m, _) <- lookupModuleInAllUnits us mn ]
+    return [m | mn <- modNames, (m, _) <- lookupModuleInAllUnits us mn]

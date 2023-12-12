@@ -1,35 +1,36 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Hhp.Find (
-    Symbol
-  , SymMdlDb
-  , findSymbol
-  , getSymMdlDb
-  , lookupSym
-  ) where
+    Symbol,
+    SymMdlDb,
+    findSymbol,
+    getSymMdlDb,
+    lookupSym,
+) where
 
-import GHC (Ghc, DynFlags, Module, ModuleInfo)
+import GHC (DynFlags, Ghc, Module, ModuleInfo)
 import qualified GHC as G
-import GHC.Unit.Info (UnitInfo, unitExposedModules, mkUnit)
-import GHC.Unit.State (listUnitInfo, UnitState)
-import GHC.Utils.Outputable (ppr)
 import GHC.Driver.Session (initSDocContext)
+import GHC.Unit.Info (UnitInfo, mkUnit, unitExposedModules)
+import GHC.Unit.State (UnitState, listUnitInfo)
+import GHC.Utils.Outputable (ppr)
 
 import Control.DeepSeq (force)
-import Control.Monad.Catch (SomeException(..), catch)
+import Control.Monad.Catch (SomeException (..), catch)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 
 import Hhp.Doc (showOneLine, styleUnqualified)
-import Hhp.Gap
 import Hhp.GHCApi
+import Hhp.Gap
 import Hhp.Types
 
 -- | Type of key for `SymMdlDb`.
 type Symbol = String
+
 -- | Database from 'Symbol' to modules.
 newtype SymMdlDb = SymMdlDb (Map Symbol [ModuleString])
 
@@ -56,7 +57,7 @@ lookupSym opt sym (SymMdlDb db) = convert opt $ fromMaybe [] (M.lookup sym db)
 ----------------------------------------------------------------
 
 -- | Browsing all functions in all system/user modules.
-browseAll :: DynFlags -> Ghc [(String,String)]
+browseAll :: DynFlags -> Ghc [(String, String)]
 browseAll dflag = do
     ms <- packageModules <$> getUnitState
     is <- catMaybes <$> mapM getMaybeModuleInfo ms
@@ -66,9 +67,9 @@ browseAll dflag = do
 getMaybeModuleInfo :: Module -> Ghc (Maybe (Maybe ModuleInfo))
 getMaybeModuleInfo x = Just <$> G.getModuleInfo x `catch` (\(SomeException _) -> return Nothing)
 
-toNameModule :: DynFlags -> (Module, Maybe ModuleInfo) -> [(String,String)]
-toNameModule _     (_,Nothing)  = []
-toNameModule dflag (m,Just inf) = map (\name -> (toStr name, mdl)) names
+toNameModule :: DynFlags -> (Module, Maybe ModuleInfo) -> [(String, String)]
+toNameModule _ (_, Nothing) = []
+toNameModule dflag (m, Just inf) = map (\name -> (toStr name, mdl)) names
   where
     mdl = G.moduleNameString (G.moduleName m)
     names = G.modInfoExports inf
