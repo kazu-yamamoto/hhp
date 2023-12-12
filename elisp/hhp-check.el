@@ -321,7 +321,7 @@ nil            does not display errors/warnings.
     (let ((arity (or ar 1)))
       (save-excursion
 	(goto-char (point-max))
-	(re-search-backward (format "^%s *::" (regexp-quote fn)))
+	(re-search-backward (format "^%s +" (regexp-quote fn)))
 	(forward-line)
 	(re-search-forward "^$" nil t)
 	(insert fn)
