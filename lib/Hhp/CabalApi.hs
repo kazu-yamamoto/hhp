@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 
 module Hhp.CabalApi (
     getCompilerOptions,
@@ -40,6 +41,9 @@ import Distribution.Types.Flag (mkFlagAssignment, mkFlagName)
 import Distribution.Types.PackageName (unPackageName)
 #if MIN_VERSION_Cabal(3,6,0)
 import Distribution.Utils.Path (getSymbolicPath, SymbolicPath)
+#endif
+#if MIN_VERSION_Cabal(3,14,0)
+import qualified Distribution.Utils.Path as Path
 #endif
 
 import GHC.Utils.Monad (liftIO)
@@ -120,7 +124,7 @@ parseCabalFile :: FilePath -> IO PackageDescription
 parseCabalFile file = do
     cid <- getGHCId
     let cid' = unknownCompilerInfo cid NoAbiTag
-    epgd <- readGenericPackageDescription silent file
+    epgd <- readPackageDescription file
     flags <- getFlags
     case toPkgDesc cid' flags epgd of
         Left deps -> throwIO $ userError $ show deps ++ " are not installed"
@@ -151,7 +155,7 @@ getGHCOptions ghcopts cradle rdir binfo = do
   where
     pkgDb = ghcDbStackOpts $ cradlePkgDbStack cradle
     lang = maybe "-XHaskell98" (("-X" ++) . display) $ P.defaultLanguage binfo
-    libDirs = map ("-L" ++) $ P.extraLibDirs binfo
+    libDirs = map ("-L" ++) $ extLibDirs binfo
     exts = map (("-X" ++) . display) $ P.usedExtensions binfo
     libs = map ("-l" ++) $ P.extraLibs binfo
 
@@ -234,7 +238,11 @@ cabalAllTargets pd = do
     getTestTarget ts =
         case P.testInterface ts of
             (TestSuiteExeV10 _ filePath) -> do
-                let maybeTests = [toPath p </> e | p <- P.hsSourceDirs $ P.testBuildInfo ts, e <- [filePath]]
+                let maybeTests =
+                        [ p <//> e
+                        | p <- P.hsSourceDirs $ P.testBuildInfo ts
+                        , e <- [filePath]
+                        ]
                 liftIO $ filterM doesFileExist maybeTests
             (TestSuiteLibV09 _ moduleName) -> return [toModuleString moduleName]
             (TestSuiteUnsupported _) -> return []
@@ -242,9 +250,28 @@ cabalAllTargets pd = do
     getExecutableTarget :: Executable -> IO [String]
     getExecutableTarget exe = do
         let maybeExes =
-                [ toPath p </> e | p <- P.hsSourceDirs $ P.buildInfo exe, e <- [P.modulePath exe]
+                [ p <//> e
+                | p <- P.hsSourceDirs $ P.buildInfo exe
+                , e <- [P.modulePath exe]
                 ]
         liftIO $ filterM doesFileExist maybeExes
+
+#if MIN_VERSION_Cabal(3,14,0)
+(<//>) :: SymbolicPath Path.Pkg (Path.Dir Path.Source)
+       -> Path.RelativePath Path.Source Path.File
+       -> FilePath
+dir <//> file = toPath (dir Path.</> file)
+#else
+(<//>) :: SymbolicPath from to -> FilePath -> FilePath
+dir <//> file = toPath dir </> file
+#endif
+
+extLibDirs :: BuildInfo -> [FilePath]
+#if MIN_VERSION_Cabal(3,14,0)
+extLibDirs = map getSymbolicPath . P.extraLibDirs
+#else
+extLibDirs = P.extraLibDirs
+#endif
 
 #if MIN_VERSION_Cabal(3,6,0)
 toPath :: SymbolicPath from to -> FilePath
@@ -252,4 +279,11 @@ toPath = getSymbolicPath
 #else
 toPath :: String -> String
 toPath = id
+#endif
+
+readPackageDescription :: FilePath -> IO P.GenericPackageDescription
+#if MIN_VERSION_Cabal(3,14,0)
+readPackageDescription = readGenericPackageDescription silent Nothing . Path.makeSymbolicPath
+#else
+readPackageDescription = readGenericPackageDescription silent
 #endif
