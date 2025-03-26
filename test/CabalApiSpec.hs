@@ -13,7 +13,9 @@ spec = do
     describe "parseCabalFile" $ do
         it "throws an exception if the cabal file is broken" $ do
             parseCabalFile "test/data/broken-cabal/broken.cabal"
-                `shouldThrow` (\(_ :: IOException) -> True)
+                -- GHC 9.8 or earlier: IOException
+                -- GHC 9.10 or later: VerboseException
+                `shouldThrow` (\(_ :: SomeException) -> True)
 
     {- For success, "test/data/cabal.sandbox.config" must contain absolute paths.
         describe "getCompilerOptions" $ do
