@@ -4,7 +4,6 @@ module Main where
 
 import Control.Exception (ErrorCall (..), Exception, Handler (..))
 import qualified Control.Exception as E
-import Data.Typeable (Typeable)
 import Data.Version (showVersion)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..))
 import qualified System.Console.GetOpt as O
@@ -119,7 +118,7 @@ data HhpcError
     | NoSuchCommand String
     | CmdArg [String]
     | FileNotExist String
-    deriving (Show, Typeable)
+    deriving (Show)
 
 instance Exception HhpcError
 

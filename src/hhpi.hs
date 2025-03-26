@@ -25,7 +25,6 @@ import qualified Control.Exception as E
 import Control.Monad (void, when)
 import Data.Set (Set)
 import qualified Data.Set as S
-import Data.Typeable (Typeable)
 import Data.Version (showVersion)
 import System.Console.GetOpt
 import System.Directory (setCurrentDirectory)
@@ -87,7 +86,7 @@ parseArgs spec argv =
 
 ----------------------------------------------------------------
 
-newtype HhpiError = CmdArg [String] deriving (Show, Typeable)
+newtype HhpiError = CmdArg [String] deriving (Show)
 
 instance Exception HhpiError
 
