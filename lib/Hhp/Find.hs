@@ -48,7 +48,7 @@ getSymMdlDb = do
         !m = force $ M.fromList sms
     return (SymMdlDb m)
   where
-    tieup x = (head (map fst x), map snd x)
+    tieup x = (unsafeHead (map fst x), map snd x)
 
 -- | Looking up 'SymMdlDb' with 'Symbol' to find modules.
 lookupSym :: Options -> Symbol -> SymMdlDb -> String

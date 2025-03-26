@@ -68,7 +68,7 @@ getCompilerOptions
     -> PackageDescription
     -> IO CompilerOptions
 getCompilerOptions ghcopts cradle pkgDesc = do
-    gopts <- getGHCOptions ghcopts cradle rdir $ head buildInfos
+    gopts <- getGHCOptions ghcopts cradle rdir $ unsafeHead buildInfos
     dbPkgs <- ghcPkgListEx (cradlePkgDbStack cradle)
     return $ CompilerOptions gopts idirs (depPkgs dbPkgs)
   where

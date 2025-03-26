@@ -135,7 +135,7 @@ main = flip E.catches handlers $ do
         cmdArg1 = cmdArg !. 1
         cmdArg2 = cmdArg !. 2
         cmdArg3 = cmdArg !. 3
-        remainingArgs = tail cmdArg
+        remainingArgs = drop 1 cmdArg
         nArgs n f =
             if length remainingArgs == n
                 then f

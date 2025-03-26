@@ -63,7 +63,7 @@ getSandboxDbDir sconf = do
     key = "package-db:"
     keyLen = length key
 
-    parse = head . filter (key `isPrefixOf`) . lines
+    parse = unsafeHead . filter (key `isPrefixOf`) . lines
     extractValue = dropWhileEnd isSpace . dropWhile isSpace . drop keyLen
 
 getPackageDbStack

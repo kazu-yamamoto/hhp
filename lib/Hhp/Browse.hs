@@ -100,7 +100,7 @@ processExports opt minfo = mapM (showExport opt minfo) $ removeOps $ G.modInfoEx
   where
     removeOps
         | operators opt = id
-        | otherwise = filter (isAlpha . head . getOccString)
+        | otherwise = filter (isAlpha . unsafeHead . getOccString)
 
 showExport :: Options -> ModuleInfo -> Name -> Ghc String
 showExport opt minfo e = do

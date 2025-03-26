@@ -219,3 +219,7 @@ data CompilerOptions = CompilerOptions
 instance Alternative Ghc where
     x <|> y = x `catch` (\(_ :: IOException) -> y)
     empty = undefined
+
+unsafeHead :: [a] -> a
+unsafeHead [] = error "unsafeHead"
+unsafeHead (x : _) = x
