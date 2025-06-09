@@ -35,5 +35,5 @@ Version 0.x.x supports:
 
 ## Copyright and license
 
-Copyright of this package belongs to [IIJ Innovation Institute Inc](http://www.iij-ii.co.jp/en/).
+Copyright of this package belongs to [Internet Initiative Japan Inc](http://www.iij.ad.jp/en/).
 This package is available under [BSD3 license](LICENSE).
