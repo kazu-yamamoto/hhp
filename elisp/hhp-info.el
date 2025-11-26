@@ -59,11 +59,10 @@
   (setq hhp-type-overlay (make-overlay 0 0))
   (overlay-put hhp-type-overlay 'face 'region)
   (hhp-type-clear-overlay)
-  (setq after-change-functions
-	(cons 'hhp-type-clear-overlay after-change-functions))
+  (add-hook 'after-change-functions #'hhp-type-clear-overlay)
   (add-hook 'post-command-hook 'hhp-type-post-command-hook))
 
-(defun hhp-type-clear-overlay (&optional beg end len)
+(defun hhp-type-clear-overlay (&optional _beg _end _len)
   (when (overlayp hhp-type-overlay)
     (hhp-type-set-ix 0)
     (hhp-type-set-point 0)

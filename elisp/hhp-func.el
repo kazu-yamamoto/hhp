@@ -79,7 +79,7 @@
     (condition-case nil
 	(let ((m (set-marker (make-marker) 1 (current-buffer)))
 	      ret)
-	  (dotimes (i n (nreverse ret))
+	  (dotimes (_i n (nreverse ret))
 	    (hhp-add ret (read m))))
       (error ()))))
 
