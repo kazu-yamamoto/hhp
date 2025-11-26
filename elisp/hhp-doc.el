@@ -48,7 +48,6 @@
 	 (pkg  (hhp-pkg-ver-path-get-pkg pkg-ver-path))
 	 (ver  (hhp-pkg-ver-path-get-ver pkg-ver-path))
 	 (path (hhp-pkg-ver-path-get-path pkg-ver-path))
-	 (pkg-with-ver (format "%s-%s" pkg ver))
 	 (local (format hhp-doc-local-format path mod-))
 	 (remote (format hhp-doc-hackage-format pkg ver mod-))
 	 (file (format "%s/%s.html" path mod-))
