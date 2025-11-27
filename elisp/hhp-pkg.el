@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: nil; -*-
 (define-package
   "hhp"
   0.0.0

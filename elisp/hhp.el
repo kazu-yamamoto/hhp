@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: nil; -*-
 ;;; hhp.el --- hhp front-end for haskell-mode
 
 ;; Author:  Kazu Yamamoto <Kazu@Mew.org>
