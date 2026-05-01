@@ -245,8 +245,9 @@ unloaded modules are loaded")
   (let* ((umods (hhp-unloaded-modules mods))
 	 (syms (mapcar 'hhp-module-symbol umods))
 	 (names (hhp-load-modules umods)))
-    (hhp-set syms names)
-    (hhp-merge-keywords umods)))
+    (when names
+      (hhp-set syms names)
+      (hhp-merge-keywords umods))))
 
 (defun hhp-merge-keywords (mods)
   (setq hhp-loaded-module (append mods hhp-loaded-module))
