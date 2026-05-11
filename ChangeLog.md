@@ -1,5 +1,9 @@
 # ChangeLog for HHP(Happy Haskell Programming)
 
+## 2024-03-31 v1.0.4
+
+- Updating Emacs Lisp.
+
 ## 2024-03-31 v1.0.3
 
 - Supporting GHC 9.12
