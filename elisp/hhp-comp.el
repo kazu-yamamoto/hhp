@@ -111,10 +111,11 @@ unloaded modules are loaded")
     nil))
 
 (defun hhp-load-module (mod)
-  (prog2
-      (message "Loading symbols for %s..." mod)
-      (hhp-sync-process (format "browse %s\n" mod))
-    (message "Loading symbols for %s...done" mod)))
+  (progn
+    (message "Loading symbols for %s..." mod)
+    (let ((syms (hhp-sync-process (format "browse %s\n" mod))))
+      (message "Loading symbols for %s...done" mod)
+      (if (listp syms) syms nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
