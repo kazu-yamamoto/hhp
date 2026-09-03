@@ -12,7 +12,19 @@ import Hhp.GHCApi
 import Hhp.Logger
 import Hhp.Types
 
+import Data.List
 import System.FilePath
+
+----------------------------------------------------------------
+
+takeRelativePath :: Cradle -> [String] -> Maybe FilePath
+takeRelativePath _ [] = Nothing
+takeRelativePath cradle (fn : _) = Just rp
+  where
+    root = cradleRootDir cradle
+    rp
+        | root `isPrefixOf` fn = takeDirectory $ drop (length root + 1) fn
+        | otherwise = takeDirectory fn
 
 ----------------------------------------------------------------
 
@@ -25,11 +37,10 @@ checkSyntax
     -- ^ The target files.
     -> IO String
 checkSyntax _ _ [] = return ""
-checkSyntax opt cradle files@(fn : _) = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle $ Just dir
+checkSyntax opt cradle files = withGHC sessionName $ do
+    initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
     either id id <$> check opt files
   where
-    dir = takeDirectory fn
     sessionName = case files of
         [file] -> file
         _ -> "MultipleFiles"
@@ -57,11 +68,10 @@ expandTemplate
     -- ^ The target files.
     -> IO String
 expandTemplate _ _ [] = return ""
-expandTemplate opt cradle files@(fn : _) = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle $ Just dir
+expandTemplate opt cradle files = withGHC sessionName $ do
+    initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
     either id id <$> expand opt files
   where
-    dir = takeDirectory fn
     sessionName = case files of
         [file] -> file
         _ -> "MultipleFiles"
