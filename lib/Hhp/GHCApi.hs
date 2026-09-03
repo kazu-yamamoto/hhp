@@ -16,6 +16,7 @@ module Hhp.GHCApi (
     setDeferTypeErrors,
     setPartialSignatures,
     setWarnTypedHoles,
+    Reset,
 ) where
 
 import GHC (DynFlags (..), Ghc, LoadHowMuch (..))
@@ -88,6 +89,8 @@ importDirs = [".", "..", "../..", "../../..", "../../../..", "../../../../.."]
 
 data Build = CabalPkg | SingleFile deriving (Eq)
 
+type Reset = Maybe FilePath -> Ghc ()
+
 -- | Initialize the 'DynFlags' relating to the compilation of a single
 -- file or GHC session according to the 'Cradle' and 'Options'
 -- provided.
@@ -95,8 +98,8 @@ initializeFlagsWithCradle
     :: Options
     -> Cradle
     -> Maybe FilePath
-    -> Ghc ()
-initializeFlagsWithCradle opt cradle mdir
+    -> Ghc Reset
+initializeFlagsWithCradle opt cradle mdir0
     | cabal = withCabal <|> withSandbox
     | otherwise = withSandbox
   where
@@ -105,16 +108,26 @@ initializeFlagsWithCradle opt cradle mdir
     ghcopts = ghcOpts opt
     withCabal = do
         pkgDesc <- liftIO $ parseCabalFile $ fromJust mCradleFile
-        compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc mdir
-        initSession CabalPkg opt compOpts
-    withSandbox = initSession SingleFile opt compOpts
+        let reset = makeReset pkgDesc
+        reset mdir0
+        return reset
       where
-        pkgOpts = ghcDbStackOpts $ cradlePkgDbStack cradle
-        compOpts
-            | null pkgOpts = CompilerOptions ghcopts importDirs []
-            | otherwise = CompilerOptions (ghcopts ++ pkgOpts) [wdir, rdir] []
-        wdir = cradleCurrentDir cradle
-        rdir = cradleRootDir cradle
+        makeReset pkgDesc mdir = do
+            compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc mdir
+            initSession CabalPkg opt compOpts
+    withSandbox = do
+        reset mdir0
+        return $ reset
+      where
+        reset _ = do
+            initSession SingleFile opt compOpts
+          where
+            pkgOpts = ghcDbStackOpts $ cradlePkgDbStack cradle
+            compOpts
+                | null pkgOpts = CompilerOptions ghcopts importDirs []
+                | otherwise = CompilerOptions (ghcopts ++ pkgOpts) [wdir, rdir] []
+            wdir = cradleCurrentDir cradle
+            rdir = cradleRootDir cradle
 
 ----------------------------------------------------------------
 

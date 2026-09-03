@@ -3,6 +3,7 @@ module Hhp.Check (
     check,
     expandTemplate,
     expand,
+    takeRelativePath,
 ) where
 
 import GHC (DynFlags (..), Ghc)
@@ -38,7 +39,7 @@ checkSyntax
     -> IO String
 checkSyntax _ _ [] = return ""
 checkSyntax opt cradle files = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
+    _ <- initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
     either id id <$> check opt files
   where
     sessionName = case files of
@@ -69,7 +70,7 @@ expandTemplate
     -> IO String
 expandTemplate _ _ [] = return ""
 expandTemplate opt cradle files = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
+    _ <- initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
     either id id <$> expand opt files
   where
     sessionName = case files of

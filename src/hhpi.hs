@@ -23,6 +23,7 @@ import Control.Concurrent (MVar, forkIO, newEmptyMVar, putMVar, readMVar)
 import Control.Exception (Exception, SomeException (..))
 import qualified Control.Exception as E
 import Control.Monad (void, when)
+import Data.IORef
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Version (showVersion)
@@ -111,7 +112,8 @@ main =
         mvar <- liftIO newEmptyMVar
         mlibdir <- getSystemLibDir
         void $ forkIO $ setupDB cradle mlibdir opt mvar
-        run cradle mlibdir opt $ loop opt S.empty mvar
+        ref <- newIORef $ Just "."
+        run cradle mlibdir opt $ loop cradle opt S.empty mvar ref
       where
         -- this is just in case.
         -- If an error is caught here, it is a bug of Hhp library.
@@ -125,29 +127,47 @@ replace (x : xs) = x : replace xs
 
 ----------------------------------------------------------------
 
-run :: Cradle -> Maybe FilePath -> Options -> Ghc a -> IO a
+run
+    :: Cradle
+    -> Maybe FilePath
+    -> Options
+    -> (Reset -> Ghc a)
+    -> IO a
 run cradle mlibdir opt body = runGhc mlibdir $ do
-    initializeFlagsWithCradle opt cradle Nothing
-    body
+    reset <- initializeFlagsWithCradle opt cradle Nothing
+    body reset
 
 ----------------------------------------------------------------
 
 setupDB :: Cradle -> Maybe FilePath -> Options -> MVar SymMdlDb -> IO ()
 setupDB cradle mlibdir opt mvar = E.handle handler $ do
-    db <- run cradle mlibdir opt getSymMdlDb
+    db <- run cradle mlibdir opt $ \_ -> getSymMdlDb
     putMVar mvar db
   where
     handler (SomeException _) = return () -- fixme: put emptyDb?
 
 ----------------------------------------------------------------
 
-loop :: Options -> Set FilePath -> MVar SymMdlDb -> Ghc ()
-loop opt set mvar = do
+loop
+    :: Cradle
+    -> Options
+    -> Set FilePath
+    -> MVar SymMdlDb
+    -> IORef (Maybe FilePath)
+    -> Reset
+    -> Ghc ()
+loop cradle opt set mvar ref reset = do
     cmdArg <- liftIO getLine
     let (cmd, arg') = break (== ' ') cmdArg
         arg = dropWhile (== ' ') arg'
     (ret, ok, set') <- case cmd of
-        "check" -> checkStx opt set arg
+        "check" -> do
+            rp0 <- liftIO $ readIORef ref
+            let rp1 = takeRelativePath cradle [arg]
+            when (rp0 /= rp1) $ do
+                liftIO $ writeIORef ref rp1
+                reset rp1
+            checkStx opt set arg
         "find" -> findSym opt set arg mvar
         "lint" -> lintStx opt set arg
         "info" -> showInfo opt set arg
@@ -164,7 +184,7 @@ loop opt set mvar = do
         else do
             liftIO $ putStrLn $ "NG " ++ replace ret
     liftIO $ hFlush stdout
-    when ok $ loop opt set' mvar
+    when ok $ loop cradle opt set' mvar ref reset
 
 ----------------------------------------------------------------
 

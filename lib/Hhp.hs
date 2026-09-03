@@ -34,6 +34,7 @@ module Hhp (
     -- * Misc
     cProjectVersion,
     cProjectVersionInt,
+    takeRelativePath,
 ) where
 
 import Hhp.Boot

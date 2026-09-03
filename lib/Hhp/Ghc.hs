@@ -7,6 +7,7 @@ module Hhp.Ghc (
 
     -- * Initializing DynFlags
     initializeFlagsWithCradle,
+    Reset,
 
     -- * Ghc utilities
     boot,
