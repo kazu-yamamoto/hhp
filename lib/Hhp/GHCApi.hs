@@ -17,6 +17,7 @@ module Hhp.GHCApi (
     setPartialSignatures,
     setWarnTypedHoles,
     Reset,
+    GetHSDir,
 ) where
 
 import GHC (DynFlags (..), Ghc, LoadHowMuch (..))
@@ -90,6 +91,7 @@ importDirs = [".", "..", "../..", "../../..", "../../../..", "../../../../.."]
 data Build = CabalPkg | SingleFile deriving (Eq)
 
 type Reset = Maybe FilePath -> Ghc ()
+type GetHSDir = Maybe FilePath -> Maybe FilePath
 
 -- | Initialize the 'DynFlags' relating to the compilation of a single
 -- file or GHC session according to the 'Cradle' and 'Options'
@@ -98,8 +100,8 @@ initializeFlagsWithCradle
     :: Options
     -> Cradle
     -> Maybe FilePath
-    -> Ghc Reset
-initializeFlagsWithCradle opt cradle mdir0
+    -> Ghc (Reset, GetHSDir)
+initializeFlagsWithCradle opt cradle mHsFile
     | cabal = withCabal <|> withSandbox
     | otherwise = withSandbox
   where
@@ -109,18 +111,19 @@ initializeFlagsWithCradle opt cradle mdir0
     withCabal = do
         pkgDesc <- liftIO $ parseCabalFile $ fromJust mCradleFile
         let reset = makeReset pkgDesc
-        reset mdir0
-        return reset
+            gethsd = getHsSourceDir pkgDesc
+        reset mHsFile
+        return (reset, gethsd)
       where
-        makeReset pkgDesc mdir = do
-            compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc mdir
+        makeReset pkgDesc mfn = do
+            compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc mfn
             initSession CabalPkg opt compOpts
     withSandbox = do
-        reset mdir0
-        return $ reset
+        reset mHsFile
+        return (reset, gethsd)
       where
-        reset _ = do
-            initSession SingleFile opt compOpts
+        gethsd _ = Nothing
+        reset _ = initSession SingleFile opt compOpts
           where
             pkgOpts = ghcDbStackOpts $ cradlePkgDbStack cradle
             compOpts

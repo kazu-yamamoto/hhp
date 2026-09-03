@@ -3,7 +3,6 @@ module Hhp.Check (
     check,
     expandTemplate,
     expand,
-    takeRelativePath,
 ) where
 
 import GHC (DynFlags (..), Ghc)
@@ -13,19 +12,7 @@ import Hhp.GHCApi
 import Hhp.Logger
 import Hhp.Types
 
-import Data.List
-import System.FilePath
-
-----------------------------------------------------------------
-
-takeRelativePath :: Cradle -> [String] -> Maybe FilePath
-takeRelativePath _ [] = Nothing
-takeRelativePath cradle (fn : _) = Just rp
-  where
-    root = cradleRootDir cradle
-    rp
-        | root `isPrefixOf` fn = takeDirectory $ drop (length root + 1) fn
-        | otherwise = takeDirectory fn
+import Data.Maybe
 
 ----------------------------------------------------------------
 
@@ -39,7 +26,7 @@ checkSyntax
     -> IO String
 checkSyntax _ _ [] = return ""
 checkSyntax opt cradle files = withGHC sessionName $ do
-    _ <- initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
+    _ <- initializeFlagsWithCradle opt cradle $ listToMaybe files
     either id id <$> check opt files
   where
     sessionName = case files of
@@ -70,7 +57,7 @@ expandTemplate
     -> IO String
 expandTemplate _ _ [] = return ""
 expandTemplate opt cradle files = withGHC sessionName $ do
-    _ <- initializeFlagsWithCradle opt cradle $ takeRelativePath cradle files
+    _ <- initializeFlagsWithCradle opt cradle $ listToMaybe files
     either id id <$> expand opt files
   where
     sessionName = case files of

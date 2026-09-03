@@ -131,11 +131,11 @@ run
     :: Cradle
     -> Maybe FilePath
     -> Options
-    -> (Reset -> Ghc a)
+    -> ((Reset, GetHSDir) -> Ghc a)
     -> IO a
 run cradle mlibdir opt body = runGhc mlibdir $ do
-    reset <- initializeFlagsWithCradle opt cradle Nothing
-    body reset
+    x <- initializeFlagsWithCradle opt cradle Nothing
+    body x
 
 ----------------------------------------------------------------
 
@@ -154,19 +154,19 @@ loop
     -> Set FilePath
     -> MVar SymMdlDb
     -> IORef (Maybe FilePath)
-    -> Reset
+    -> (Reset, GetHSDir)
     -> Ghc ()
-loop cradle opt set mvar ref reset = do
+loop cradle opt set mvar ref ops@(reset, getHsDir) = do
     cmdArg <- liftIO getLine
     let (cmd, arg') = break (== ' ') cmdArg
         arg = dropWhile (== ' ') arg'
     (ret, ok, set') <- case cmd of
         "check" -> do
             rp0 <- liftIO $ readIORef ref
-            let rp1 = takeRelativePath cradle [arg]
+            let rp1 = getHsDir $ Just arg
             when (rp0 /= rp1) $ do
                 liftIO $ writeIORef ref rp1
-                reset rp1
+                reset $ Just arg
             checkStx opt set arg
         "find" -> findSym opt set arg mvar
         "lint" -> lintStx opt set arg
@@ -184,7 +184,7 @@ loop cradle opt set mvar ref reset = do
         else do
             liftIO $ putStrLn $ "NG " ++ replace ret
     liftIO $ hFlush stdout
-    when ok $ loop cradle opt set' mvar ref reset
+    when ok $ loop cradle opt set' mvar ref ops
 
 ----------------------------------------------------------------
 

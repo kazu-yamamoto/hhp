@@ -9,6 +9,7 @@ module Hhp.CabalApi (
     cabalDependPackages,
     cabalSourceDirs,
     cabalAllTargets,
+    getHsSourceDir,
 ) where
 
 import Distribution.Compiler (AbiTag (NoAbiTag), unknownCompilerInfo)
@@ -51,7 +52,7 @@ import GHC.Utils.Monad (liftIO)
 import Control.Exception (throwIO)
 import Control.Monad (filterM)
 import Data.List (isPrefixOf)
-import Data.Maybe (fromMaybe, mapMaybe, maybeToList)
+import Data.Maybe (fromMaybe, listToMaybe, mapMaybe, maybeToList)
 import Data.Set (fromList, toList)
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv)
@@ -69,16 +70,17 @@ getCompilerOptions
     -> PackageDescription
     -> Maybe FilePath
     -> IO CompilerOptions
-getCompilerOptions ghcopts cradle pkgDesc mdir = do
+getCompilerOptions ghcopts cradle pkgDesc hsFile = do
     gopts <- getGHCOptions ghcopts cradle rdir $ unsafeHead buildInfos
     dbPkgs <- ghcPkgListEx (cradlePkgDbStack cradle)
-    return $ CompilerOptions gopts idirs (depPkgs dbPkgs)
+    let compOpt = CompilerOptions gopts idirs (depPkgs dbPkgs)
+    return compOpt
   where
     wdir = cradleCurrentDir cradle
     rdir = cradleRootDir cradle
     cfile = fromMaybe "error getCompilerOptions" $ cradleCabalFile cradle
     thisPkg = dropExtension $ takeFileName cfile
-    buildInfos = cabalAllBuildInfo pkgDesc mdir
+    buildInfos = cabalAllBuildInfo pkgDesc hsFile
     idirs = includeDirectories rdir wdir $ cabalSourceDirs buildInfos
     depPkgs ps =
         attachPackageIds ps $
@@ -175,18 +177,31 @@ cabalCppOptions dir = do
 
 -- | Extracting all 'BuildInfo' for libraries, executables, and tests.
 cabalAllBuildInfo :: PackageDescription -> Maybe FilePath -> [BuildInfo]
-cabalAllBuildInfo pd mdir = libBI ++ subBI ++ addBI
+cabalAllBuildInfo pd mHsFile = libBI ++ subBI ++ addBI
   where
     libBI = map P.libBuildInfo $ maybeToList $ P.library pd
     subBI = map P.libBuildInfo $ P.subLibraries pd
+    addBI = fst $ cabalExtraBuildInfo pd mHsFile
+
+getHsSourceDir :: PackageDescription -> Maybe FilePath -> Maybe FilePath
+getHsSourceDir pd mHsFile = snd $ cabalExtraBuildInfo pd mHsFile
+
+cabalExtraBuildInfo
+    :: PackageDescription -> Maybe FilePath -> ([BuildInfo], Maybe FilePath)
+cabalExtraBuildInfo pd mHsFile = (addBI, hsDir addBI)
+  where
     execBI = map P.buildInfo $ P.executables pd
     testBI = map P.testBuildInfo $ P.testSuites pd
     benchBI = map P.benchmarkBuildInfo $ P.benchmarks pd
     addBI0 = execBI ++ testBI ++ benchBI
-    addBI = case mdir of
-        Nothing -> addBI0
-        Just dir -> filter (include dir) addBI0
-    include dir b = any (`isPrefixOf` dir) $ map toPath (P.hsSourceDirs b)
+    addBI = case mHsFile of
+        Nothing -> addBI0 -- fixme: Is [] more suitable?
+        Just hsFile -> filter (include hsFile) addBI0
+    include hsFile b = any (`match` hsFile) $ map toPath $ P.hsSourceDirs b
+    match "." _ = True
+    match dir fn = dir `isPrefixOf` fn
+    hsDir [] = Nothing
+    hsDir (b : _) = toPath <$> listToMaybe (P.hsSourceDirs b)
 
 ----------------------------------------------------------------
 
