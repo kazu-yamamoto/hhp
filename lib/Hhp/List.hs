@@ -18,7 +18,7 @@ import Hhp.Types
 -- | Listing installed modules.
 listModules :: Options -> Cradle -> IO String
 listModules opt cradle = withGHC' $ do
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle opt cradle Nothing
     modules opt
 
 -- | Listing installed modules.

@@ -17,7 +17,7 @@ import Distribution.Package (Dependency (Dependency))
 import qualified Distribution.Package as C
 import Distribution.PackageDescription (
     BuildInfo,
-    Executable,
+    Executable (..),
     PackageDescription,
     TestSuite,
     TestSuiteInterface (..),
@@ -66,8 +66,9 @@ getCompilerOptions
     :: [GHCOption]
     -> Cradle
     -> PackageDescription
+    -> Maybe FilePath
     -> IO CompilerOptions
-getCompilerOptions ghcopts cradle pkgDesc = do
+getCompilerOptions ghcopts cradle pkgDesc mdir = do
     gopts <- getGHCOptions ghcopts cradle rdir $ unsafeHead buildInfos
     dbPkgs <- ghcPkgListEx (cradlePkgDbStack cradle)
     return $ CompilerOptions gopts idirs (depPkgs dbPkgs)
@@ -76,7 +77,7 @@ getCompilerOptions ghcopts cradle pkgDesc = do
     rdir = cradleRootDir cradle
     cfile = fromMaybe "error getCompilerOptions" $ cradleCabalFile cradle
     thisPkg = dropExtension $ takeFileName cfile
-    buildInfos = cabalAllBuildInfo pkgDesc
+    buildInfos = cabalAllBuildInfo pkgDesc mdir
     idirs = includeDirectories rdir wdir $ cabalSourceDirs buildInfos
     depPkgs ps =
         attachPackageIds ps $
@@ -172,14 +173,19 @@ cabalCppOptions dir = do
 ----------------------------------------------------------------
 
 -- | Extracting all 'BuildInfo' for libraries, executables, and tests.
-cabalAllBuildInfo :: PackageDescription -> [BuildInfo]
-cabalAllBuildInfo pd = libBI ++ subBI ++ execBI ++ testBI ++ benchBI
+cabalAllBuildInfo :: PackageDescription -> Maybe FilePath -> [BuildInfo]
+cabalAllBuildInfo pd mdir = libBI ++ subBI ++ addBI
   where
     libBI = map P.libBuildInfo $ maybeToList $ P.library pd
     subBI = map P.libBuildInfo $ P.subLibraries pd
     execBI = map P.buildInfo $ P.executables pd
     testBI = map P.testBuildInfo $ P.testSuites pd
     benchBI = map P.benchmarkBuildInfo $ P.benchmarks pd
+    addBI0 = execBI ++ testBI ++ benchBI
+    addBI = case mdir of
+        Nothing -> addBI0
+        Just dir -> filter (include dir) addBI0
+    include dir b = dir `elem` map toPath (P.hsSourceDirs b)
 
 ----------------------------------------------------------------
 

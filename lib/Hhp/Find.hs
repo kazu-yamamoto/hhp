@@ -37,7 +37,7 @@ newtype SymMdlDb = SymMdlDb (Map Symbol [ModuleString])
 -- | Finding modules to which the symbol belong.
 findSymbol :: Options -> Cradle -> Symbol -> IO String
 findSymbol opt cradle sym = withGHC' $ do
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle opt cradle Nothing
     lookupSym opt sym <$> getSymMdlDb
 
 -- | Creating 'SymMdlDb'.

@@ -127,7 +127,7 @@ replace (x : xs) = x : replace xs
 
 run :: Cradle -> Maybe FilePath -> Options -> Ghc a -> IO a
 run cradle mlibdir opt body = runGhc mlibdir $ do
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle opt cradle Nothing
     body
 
 ----------------------------------------------------------------

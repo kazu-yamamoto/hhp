@@ -94,8 +94,9 @@ data Build = CabalPkg | SingleFile deriving (Eq)
 initializeFlagsWithCradle
     :: Options
     -> Cradle
+    -> Maybe FilePath
     -> Ghc ()
-initializeFlagsWithCradle opt cradle
+initializeFlagsWithCradle opt cradle mdir
     | cabal = withCabal <|> withSandbox
     | otherwise = withSandbox
   where
@@ -104,7 +105,7 @@ initializeFlagsWithCradle opt cradle
     ghcopts = ghcOpts opt
     withCabal = do
         pkgDesc <- liftIO $ parseCabalFile $ fromJust mCradleFile
-        compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc
+        compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc mdir
         initSession CabalPkg opt compOpts
     withSandbox = initSession SingleFile opt compOpts
       where

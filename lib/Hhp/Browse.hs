@@ -45,7 +45,7 @@ browseModule
     -- ^ A module name. (e.g. \"Data.List\")
     -> IO String
 browseModule opt cradle pkgmdl = withGHC' $ do
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle opt cradle Nothing
     browse opt pkgmdl
 
 -- | Getting functions, classes, etc from a module.

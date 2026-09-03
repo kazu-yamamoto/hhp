@@ -13,7 +13,7 @@ import Hhp.Types
 -- | Printing necessary information for front-end booting.
 bootInfo :: Options -> Cradle -> IO String
 bootInfo opt cradle = withGHC' $ do
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle opt cradle Nothing
     boot opt
 
 -- | Printing necessary information for front-end booting.

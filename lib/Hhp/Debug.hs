@@ -43,7 +43,7 @@ debugInfo opt cradle =
     simpleCompilerOption = CompilerOptions origGopts [] []
     fromCabalFile = do
         pkgDesc <- parseCabalFile file
-        getCompilerOptions origGopts cradle pkgDesc
+        getCompilerOptions origGopts cradle pkgDesc Nothing
       where
         file = fromJust mCabalFile
 

@@ -12,6 +12,8 @@ import Hhp.GHCApi
 import Hhp.Logger
 import Hhp.Types
 
+import System.FilePath
+
 ----------------------------------------------------------------
 
 -- | Checking syntax of a target file using GHC.
@@ -23,10 +25,11 @@ checkSyntax
     -- ^ The target files.
     -> IO String
 checkSyntax _ _ [] = return ""
-checkSyntax opt cradle files = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle
+checkSyntax opt cradle files@(fn : _) = withGHC sessionName $ do
+    initializeFlagsWithCradle opt cradle $ Just dir
     either id id <$> check opt files
   where
+    dir = takeDirectory fn
     sessionName = case files of
         [file] -> file
         _ -> "MultipleFiles"
@@ -54,10 +57,11 @@ expandTemplate
     -- ^ The target files.
     -> IO String
 expandTemplate _ _ [] = return ""
-expandTemplate opt cradle files = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle
+expandTemplate opt cradle files@(fn : _) = withGHC sessionName $ do
+    initializeFlagsWithCradle opt cradle $ Just dir
     either id id <$> expand opt files
   where
+    dir = takeDirectory fn
     sessionName = case files of
         [file] -> file
         _ -> "MultipleFiles"
