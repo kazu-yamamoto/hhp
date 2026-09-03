@@ -50,6 +50,7 @@ import GHC.Utils.Monad (liftIO)
 
 import Control.Exception (throwIO)
 import Control.Monad (filterM)
+import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe, mapMaybe, maybeToList)
 import Data.Set (fromList, toList)
 import System.Directory (doesFileExist)
@@ -185,7 +186,7 @@ cabalAllBuildInfo pd mdir = libBI ++ subBI ++ addBI
     addBI = case mdir of
         Nothing -> addBI0
         Just dir -> filter (include dir) addBI0
-    include dir b = dir `elem` map toPath (P.hsSourceDirs b)
+    include dir b = any (`isPrefixOf` dir) $ map toPath (P.hsSourceDirs b)
 
 ----------------------------------------------------------------
 
