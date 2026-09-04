@@ -220,6 +220,6 @@ instance Alternative Ghc where
     x <|> y = x `catch` (\(_ :: IOException) -> y)
     empty = undefined
 
-unsafeHead :: [a] -> a
-unsafeHead [] = error "unsafeHead"
-unsafeHead (x : _) = x
+unsafeHead :: String -> [a] -> a
+unsafeHead msg [] = error $ "unsafeHead: " ++ msg
+unsafeHead _ (x : _) = x

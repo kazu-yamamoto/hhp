@@ -71,7 +71,8 @@ getCompilerOptions
     -> Maybe FilePath
     -> IO CompilerOptions
 getCompilerOptions ghcopts cradle pkgDesc hsFile = do
-    gopts <- getGHCOptions ghcopts cradle rdir $ unsafeHead buildInfos
+    gopts <-
+        getGHCOptions ghcopts cradle rdir $ unsafeHead "getCompilerOptions" buildInfos
     dbPkgs <- ghcPkgListEx (cradlePkgDbStack cradle)
     let compOpt = CompilerOptions gopts idirs (depPkgs dbPkgs)
     return compOpt
