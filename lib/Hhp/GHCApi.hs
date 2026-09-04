@@ -111,7 +111,7 @@ initializeFlagsWithCradle opt cradle mHsFile
     withCabal = do
         pkgDesc <- liftIO $ parseCabalFile $ fromJust mCradleFile
         let reset = makeReset pkgDesc
-            gethsd = getHsSourceDir pkgDesc
+            gethsd = getHsSourceDir cradle pkgDesc
         reset mHsFile
         return (reset, gethsd)
       where
