@@ -37,26 +37,26 @@ spec = do
     describe "cabalDependPackages" $ do
         it "extracts dependent packages" $ do
             pkgs <-
-                cabalDependPackages . flip cabalAllBuildInfo Nothing
+                cabalDependPackages . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/cabalapi.cabal"
             pkgs `shouldBe` ["Cabal", "base", "template-haskell"]
 
     describe "cabalSourceDirs" $ do
         it "extracts all hs-source-dirs" $ do
             dirs <-
-                cabalSourceDirs . flip cabalAllBuildInfo Nothing
+                cabalSourceDirs . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/check-test-subdir/check-test-subdir.cabal"
             dirs `shouldBe` ["src", "test"]
         it "extracts all hs-source-dirs including \".\"" $ do
             dirs <-
-                cabalSourceDirs . flip cabalAllBuildInfo Nothing
+                cabalSourceDirs . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/cabalapi.cabal"
             dirs `shouldBe` [".", "test"]
 
     describe "cabal-subLibraries" $ do
         it "dependent packages with sublib" $ do
             pkgs <-
-                cabalDependPackages . flip cabalAllBuildInfo Nothing
+                cabalDependPackages . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/check-sublib/check-sublib.cabal"
             pkgs `shouldBe` ["array", "base", "bytestring"]
 
@@ -64,19 +64,19 @@ spec = do
         it "dependent packages without flags" $ do
             unsetEnv "HHP_CABAL_FLAGS"
             pkgs <-
-                cabalDependPackages . flip cabalAllBuildInfo Nothing
+                cabalDependPackages . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
             pkgs `shouldBe` ["base", "directory"]
         it "dependent packages with foo flag" $ do
             setEnv "HHP_CABAL_FLAGS" "foo"
             pkgs <-
-                cabalDependPackages . flip cabalAllBuildInfo Nothing
+                cabalDependPackages . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
             pkgs `shouldBe` ["base", "directory", "filepath"]
         it "dependent packages with foo and -bar flag" $ do
             setEnv "HHP_CABAL_FLAGS" "foo -bar"
             pkgs <-
-                cabalDependPackages . flip cabalAllBuildInfo Nothing
+                cabalDependPackages . cabalAllBuildInfo'
                     <$> parseCabalFile "test/data/check-flags/check-flags.cabal"
             pkgs `shouldBe` ["base", "filepath"]
 

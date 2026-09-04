@@ -6,6 +6,7 @@ module Hhp.CabalApi (
     getCompilerOptions,
     parseCabalFile,
     cabalAllBuildInfo,
+    cabalAllBuildInfo',
     cabalDependPackages,
     cabalSourceDirs,
     cabalAllTargets,
@@ -183,15 +184,28 @@ cabalAllBuildInfo cradle pd mHsFile = libBI ++ subBI ++ addBI
   where
     libBI = map P.libBuildInfo $ maybeToList $ P.library pd
     subBI = map P.libBuildInfo $ P.subLibraries pd
-    addBI = fst $ cabalExtraBuildInfo cradle pd mHsFile
+    addBI = fst $ cabalExtraBuildInfo (Just cradle) pd mHsFile
+
+-- for testing
+cabalAllBuildInfo'
+    :: PackageDescription -> [BuildInfo]
+cabalAllBuildInfo' pd = libBI ++ subBI ++ addBI
+  where
+    libBI = map P.libBuildInfo $ maybeToList $ P.library pd
+    subBI = map P.libBuildInfo $ P.subLibraries pd
+    addBI = fst $ cabalExtraBuildInfo Nothing pd Nothing
 
 getHsSourceDir
     :: Cradle -> PackageDescription -> Maybe FilePath -> Maybe FilePath
-getHsSourceDir cradle pd mHsFile = snd $ cabalExtraBuildInfo cradle pd mHsFile
+getHsSourceDir cradle pd mHsFile =
+    snd $ cabalExtraBuildInfo (Just cradle) pd mHsFile
 
 cabalExtraBuildInfo
-    :: Cradle -> PackageDescription -> Maybe FilePath -> ([BuildInfo], Maybe FilePath)
-cabalExtraBuildInfo cradle pd mHsFile = (addBI, hsDir addBI)
+    :: Maybe Cradle
+    -> PackageDescription
+    -> Maybe FilePath
+    -> ([BuildInfo], Maybe FilePath)
+cabalExtraBuildInfo mcradle pd mHsFile = (addBI, hsDir addBI)
   where
     execBI = map P.buildInfo $ P.executables pd
     testBI = map P.testBuildInfo $ P.testSuites pd
@@ -199,9 +213,11 @@ cabalExtraBuildInfo cradle pd mHsFile = (addBI, hsDir addBI)
     addBI0 = execBI ++ testBI ++ benchBI
     addBI = case mHsFile of
         Nothing -> addBI0 -- fixme: Is [] more suitable?
-        Just hsFile ->
-            let hsFile' = takeRelativePath cradle hsFile
-             in filter (include hsFile') addBI0
+        Just hsFile -> case mcradle of
+            Nothing -> addBI0 -- fixme: Is [] more suitable?
+            Just cradle -> do
+                let hsFile' = takeRelativePath cradle hsFile
+                 in filter (include hsFile') addBI0
     include hsFile b = any (`match` hsFile) $ map toPath $ P.hsSourceDirs b
     match "." _ = True
     match dir fn = dir `isPrefixOf` fn
