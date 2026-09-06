@@ -1,10 +1,19 @@
 # ChangeLog for HHP(Happy Haskell Programming)
 
-## 2024-03-31 v1.0.4
+## 2026-09-07 v1.0.4
+
+- Bug fix for reading symbols from Emacs Lisp.
+- Properly specifying hs-source-dir: Previously, all hs-source-dirs
+  were specified whenever there were multiple ones. If modules
+  happened to share the same name and the paths were specified in the
+  wrong order, syntax checks would fail. So, updating the
+  configuration to specify only the minimum necessary hs-source-dirs.
+
+## 2026-03-11 v1.0.4
 
 - Updating Emacs Lisp.
 
-## 2024-03-31 v1.0.3
+## 2025-03-31 v1.0.3
 
 - Supporting GHC 9.12
 
